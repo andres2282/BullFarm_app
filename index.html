@@ -3710,8 +3710,9 @@
   }
 
   // ============= COMPRAR SOBRE ON-CHAIN =============
-  // Llama al backend para generar rarezas, luego al contrato para comprar.
-  // packId: número 0-8, payToken: 'BFM' o 'WLD', amount: cantidad como string decimal
+  // FIX: separar approve y compra en clicks REALES del usuario.
+  // Si no hay allowance: pide approve, espera CONFIRMACIÓN on-chain (loop con RPC).
+  // Si ya hay allowance: ejecuta la compra directo.
   async function buyPackOnChain(packIdNum, payToken, amountReadable) {
     try {
       const mk = window.MiniKit;
@@ -3719,7 +3720,65 @@
       const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
-      // 1. Pedir rarezas al backend
+      // 1. Pedir rarezas al backend (se pide al final, después del approve)
+      const amountWei = ethers.parseEther(String(amountReadable));
+      // packId como bytes32 limpio
+      const packIdBytes32 = '0x' + packIdNum.toString(16).padStart(64, '0');
+
+      // 2. Verificar allowance ACTUAL via RPC
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      let currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
+
+      // 3. Si NO hay suficiente allowance, hacer SOLO approve (1 tx aislada)
+      if (currentAllowance < amountWei) {
+        // Encodear approve manualmente (más seguro en World App)
+        const approveSel = ethers.id('approve(address,uint256)').slice(0,10);
+        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+        const approveData = approveSel + abiCoder.encode(
+          ['address','uint256'],
+          [GAME_CONTRACT, ethers.MaxUint256]
+        ).slice(2);
+
+        const approveResult = await mk.sendTransaction({
+          chainId: 480,
+          transactions: [{ to: tokenAddress, data: approveData }]
+        });
+        const approvePayload = approveResult?.finalPayload || approveResult?.data || approveResult;
+        if (approvePayload?.status === 'error' || approvePayload?.error_code) {
+          throw new Error('Approve rechazado: ' + (approvePayload?.error_code || 'unknown'));
+        }
+
+        // Esperar CONFIRMACIÓN ON-CHAIN del approve (loop con RPC)
+        // Verificar hasta 30 veces, cada 2s = max 60 seg
+        let attempts = 0;
+        const maxAttempts = 30;
+        while (attempts < maxAttempts) {
+          await new Promise(r => setTimeout(r, 2000));
+          try {
+            currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
+            if (currentAllowance >= amountWei) {
+              break; // approve confirmado!
+            }
+          } catch (e) {
+            console.warn('Allowance check attempt', attempts, e.message);
+          }
+          attempts++;
+        }
+
+        // Si después de 60 seg sigue sin allowance, retornar needsRetry
+        if (currentAllowance < amountWei) {
+          return {
+            ok: false,
+            error: 'Aprobación enviada pero todavía no confirma. Espera 30 seg y toca ABRIR SOBRE de nuevo.',
+            needsRetry: true
+          };
+        }
+        // Approve confirmado, continuar con la compra
+      }
+
+      // 4. Pedir rarezas al backend (ya que estamos seguros de poder comprar)
       const resp = await fetch(PACK_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3735,42 +3794,19 @@
         throw new Error('Backend no devolvió rarezas válidas');
       }
 
-      // 2. Calcular packId como bytes32 (forma segura)
-      const amountWei = ethers.parseEther(String(amountReadable));
-      const packIdBytes32 = '0x' + packIdNum.toString(16).padStart(64, '0');
-
-      // 3. Verificar allowance ANTES (no en bundle, separado)
-      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
-      const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-      const currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
-
-      // 4. Si NO hay suficiente allowance, hacer SOLO approve (1 tx separada)
-      if (currentAllowance < amountWei) {
-        const approveIface = new ethers.Interface(ERC20_ABI);
-        const approveData = approveIface.encodeFunctionData('approve', [GAME_CONTRACT, MAX_UINT256]);
-        const approveResult = await mk.sendTransaction({
-          chainId: 480,
-          transactions: [{ to: tokenAddress, data: approveData }]
-        });
-        const approvePayload = approveResult?.finalPayload || approveResult?.data || approveResult;
-        if (approvePayload?.status === 'error' || approvePayload?.error_code) {
-          throw new Error('Approve rechazado: ' + (approvePayload?.error_code || 'unknown'));
-        }
-        // Esperar a que el approve se propague en la red (~4s en World Chain)
-        await new Promise(r => setTimeout(r, 5000));
-        // Retornar indicando que el usuario debe tocar de nuevo
-        return { ok: false, error: 'Aprobación lista. Toca ABRIR SOBRE de nuevo para comprar.', needsRetry: true };
-      }
-
-      // 5. Ya hay approve: llamar al contrato
-      const iface = new ethers.Interface(GAME_ABI);
+      // 5. Llamar al contrato (encodear manualmente para máxima compatibilidad)
       const fnName = payToken === 'BFM' ? 'buyPackBFM' : 'buyPackWLD';
-      const data = iface.encodeFunctionData(fnName, [packIdBytes32, amountWei, rarities]);
+      const fnSig = fnName + '(bytes32,uint256,uint8[])';
+      const fnSel = ethers.id(fnSig).slice(0,10);
+      const abiCoder2 = ethers.AbiCoder.defaultAbiCoder();
+      const fnData = fnSel + abiCoder2.encode(
+        ['bytes32','uint256','uint8[]'],
+        [packIdBytes32, amountWei, rarities]
+      ).slice(2);
 
       const txResult = await mk.sendTransaction({
         chainId: 480,
-        transactions: [{ to: GAME_CONTRACT, data }]
+        transactions: [{ to: GAME_CONTRACT, data: fnData }]
       });
       const payload = txResult?.finalPayload || txResult?.data || txResult;
 
