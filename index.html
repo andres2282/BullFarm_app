@@ -3271,9 +3271,10 @@
   const PERMIT2            = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const QUOTER_V2          = '0x10158D43e6cc414deE1Bd1eB0EfC6a5cBCfF244c';
 
-  // ============= JUEGO ON-CHAIN — BullFarmGame =============
-  // Contrato del juego (toros, cosechas, fusiones, stats — TODO on-chain)
-  const GAME_CONTRACT      = '0xb20996C8227643bff18c2B2cB8F712329AF3133a';
+  // ============= JUEGO ON-CHAIN — BullFarmGameV2 (Permit2 Edition) =============
+  // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
+  // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
+  const GAME_CONTRACT      = '0x6D039549d3C7872279F197Ed7060Df7593B4E4f1';
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
   const HARVEST_API        = BACKEND_URL + '/api/sign-harvest';
@@ -3599,18 +3600,27 @@
   // ============= 🎮 BULLFARMGAME — Funciones on-chain del juego =============
   // ABI del contrato BullFarmGame desplegado (toros, cosechas, fusiones)
   const GAME_ABI = [
-    'function buyPackBFM(bytes32 packId, uint256 amount, uint8[] calldata rarities)',
-    'function buyPackWLD(bytes32 packId, uint256 amount, uint8[] calldata rarities)',
-    'function harvest(uint256 amount, uint256 deadline, bytes calldata signature)',
-    'function fuseBulls(uint8 fromRarity, uint8 toRarity, uint256 fromQty)',
+    // V2 - Funciones Permit2 (Worldcoin standard) ⭐
+    'function buyPackWithPermit2BFM(uint8 packId, uint256 amount, uint8[] calldata rarities)',
+    'function buyPackWithPermit2WLD(uint8 packId, uint256 amount, uint8[] calldata rarities)',
+    'function fundPoolWithPermit2(uint256 amount)',
+    // V2 - Funciones generales
+    'function harvestSigned(uint256 amount, uint256 nonce, uint256 deadline, bytes calldata signature)',
+    'function fuseBulls(uint8 fromRarity)',
+    'function fundPool(uint256 amount)',
     'function emergencyHarvest()',
+    // V2 - View functions
     'function getPlayerBulls(address player) view returns (uint256[10])',
-    'function getDailyProduction(address player) view returns (uint256)',
-    'function playerStats(address player) view returns (uint256, uint256, uint256, uint256)',
-    'function stats() view returns (uint256, uint256, uint256, uint256, uint256, uint256)',
-    'function poolBalance() view returns (uint256)',
-    'function nonces(address player) view returns (uint256)',
-    'function isEmergencyActive() view returns (bool, uint256)'
+    'function getPlayerStats(address player) view returns (uint256 totalHarvested, uint256 totalSpent, uint256 packsOpened, uint256 fusionsDone, uint256 lastHarvestNonce)',
+    'function getPoolStats() view returns (uint256 totalInPool, uint256 totalHarvested, uint256 totalSpent)',
+    'function totalBfmInPool() view returns (uint256)',
+    'function timeUntilEmergencyHarvest() view returns (uint256)'
+  ];
+
+  // ============= PERMIT2 ABI (Allowance Transfer) =============
+  const PERMIT2_ABI = [
+    'function approve(address token, address spender, uint160 amount, uint48 expiration)',
+    'function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)'
   ];
 
   // ============= MAX UINT256 para approve infinito =============
@@ -3709,10 +3719,17 @@
     }
   }
 
-  // ============= COMPRAR SOBRE ON-CHAIN =============
-  // FIX: separar approve y compra en clicks REALES del usuario.
-  // Si no hay allowance: pide approve, espera CONFIRMACIÓN on-chain (loop con RPC).
-  // Si ya hay allowance: ejecuta la compra directo.
+  // ============= COMPRAR SOBRE ON-CHAIN — PATRÓN PERMIT2 OFICIAL =============
+  // Basado en docs.world.org/mini-apps/commands/send-transaction
+  // 
+  // Flujo:
+  //   1. Pedir rarezas al backend (firma off-chain, sin gas)
+  //   2. Bundle de 1 sendTransaction con 2 transacciones:
+  //      a) Permit2.approve(token, GAME_CONTRACT, amount, 0)
+  //      b) GAME_CONTRACT.buyPackWithPermit2BFM/WLD(packId, amount, rarities)
+  //   3. World App auto-aprueba el token a Permit2 al inicio (no requiere approve clásico)
+  //   4. El contrato usa permit2.transferFrom() para jalar el pago
+  //
   async function buyPackOnChain(packIdNum, payToken, amountReadable) {
     try {
       const mk = window.MiniKit;
@@ -3720,65 +3737,7 @@
       const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
-      // 1. Pedir rarezas al backend (se pide al final, después del approve)
-      const amountWei = ethers.parseEther(String(amountReadable));
-      // packId como bytes32 limpio
-      const packIdBytes32 = '0x' + packIdNum.toString(16).padStart(64, '0');
-
-      // 2. Verificar allowance ACTUAL via RPC
-      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
-      const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-      let currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
-
-      // 3. Si NO hay suficiente allowance, hacer SOLO approve (1 tx aislada)
-      if (currentAllowance < amountWei) {
-        // Encodear approve manualmente (más seguro en World App)
-        const approveSel = ethers.id('approve(address,uint256)').slice(0,10);
-        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-        const approveData = approveSel + abiCoder.encode(
-          ['address','uint256'],
-          [GAME_CONTRACT, ethers.MaxUint256]
-        ).slice(2);
-
-        const approveResult = await mk.sendTransaction({
-          chainId: 480,
-          transactions: [{ to: tokenAddress, data: approveData }]
-        });
-        const approvePayload = approveResult?.finalPayload || approveResult?.data || approveResult;
-        if (approvePayload?.status === 'error' || approvePayload?.error_code) {
-          throw new Error('Approve rechazado: ' + (approvePayload?.error_code || 'unknown'));
-        }
-
-        // Esperar CONFIRMACIÓN ON-CHAIN del approve (loop con RPC)
-        // Verificar hasta 30 veces, cada 2s = max 60 seg
-        let attempts = 0;
-        const maxAttempts = 30;
-        while (attempts < maxAttempts) {
-          await new Promise(r => setTimeout(r, 2000));
-          try {
-            currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
-            if (currentAllowance >= amountWei) {
-              break; // approve confirmado!
-            }
-          } catch (e) {
-            console.warn('Allowance check attempt', attempts, e.message);
-          }
-          attempts++;
-        }
-
-        // Si después de 60 seg sigue sin allowance, retornar needsRetry
-        if (currentAllowance < amountWei) {
-          return {
-            ok: false,
-            error: 'Aprobación enviada pero todavía no confirma. Espera 30 seg y toca ABRIR SOBRE de nuevo.',
-            needsRetry: true
-          };
-        }
-        // Approve confirmado, continuar con la compra
-      }
-
-      // 4. Pedir rarezas al backend (ya que estamos seguros de poder comprar)
+      // 1. Pedir rarezas al backend
       const resp = await fetch(PACK_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3794,19 +3753,33 @@
         throw new Error('Backend no devolvió rarezas válidas');
       }
 
-      // 5. Llamar al contrato (encodear manualmente para máxima compatibilidad)
-      const fnName = payToken === 'BFM' ? 'buyPackBFM' : 'buyPackWLD';
-      const fnSig = fnName + '(bytes32,uint256,uint8[])';
-      const fnSel = ethers.id(fnSig).slice(0,10);
-      const abiCoder2 = ethers.AbiCoder.defaultAbiCoder();
-      const fnData = fnSel + abiCoder2.encode(
-        ['bytes32','uint256','uint8[]'],
-        [packIdBytes32, amountWei, rarities]
+      const amountWei = ethers.parseEther(String(amountReadable));
+      const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+      // 2a. Permit2.approve(token, spender, amount, expiration=0)
+      const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [tokenAddress, GAME_CONTRACT, amountWei, 0]
       ).slice(2);
 
+      // 2b. GAME_CONTRACT.buyPackWithPermit2BFM/WLD(packId, amount, rarities)
+      const fnName = payToken === 'BFM' ? 'buyPackWithPermit2BFM' : 'buyPackWithPermit2WLD';
+      const fnSig = fnName + '(uint8,uint256,uint8[])';
+      const fnSel = ethers.id(fnSig).slice(0,10);
+      const fnData = fnSel + abiCoder.encode(
+        ['uint8','uint256','uint8[]'],
+        [packIdNum, amountWei, rarities]
+      ).slice(2);
+
+      // 3. Bundle de 2 txs en una sola llamada (patrón oficial Worldcoin)
       const txResult = await mk.sendTransaction({
         chainId: 480,
-        transactions: [{ to: GAME_CONTRACT, data: fnData }]
+        transactions: [
+          { to: PERMIT2, data: permit2ApproveData },
+          { to: GAME_CONTRACT, data: fnData }
+        ]
       });
       const payload = txResult?.finalPayload || txResult?.data || txResult;
 
@@ -3819,6 +3792,7 @@
       return { ok: false, error: e.message };
     }
   }
+  }
 
   // ============= COSECHAR BFM ON-CHAIN =============
   // Pide firma al backend, luego llama a contract.harvest()
@@ -3826,16 +3800,15 @@
     try {
       const mk = window.MiniKit;
       if (!mk) throw new Error('MiniKit no disponible');
-      const playerAddress = window.userWallet;
+      const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
       // 1. Calcular timestamp de última cosecha (de localStorage o 0)
       const lastHarvest = parseInt(localStorage.getItem('bfm:lastHarvest:' + playerAddress) || '0');
       const now = Math.floor(Date.now() / 1000);
-      // Si nunca cosechó, usar hace 1 hora (para dar algo)
       const lastTs = lastHarvest > 0 ? lastHarvest : (now - 3600);
 
-      // 2. Pedir firma al backend
+      // 2. Pedir firma al backend (debe incluir nonce para V2)
       const resp = await fetch(HARVEST_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3845,25 +3818,34 @@
         })
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.json().catch(() => ({}));
         throw new Error('Backend: ' + (err.error || 'error'));
       }
-      const { amount, deadline, signature, amountReadable } = await resp.json();
+      const { amount, nonce, deadline, signature, amountReadable } = await resp.json();
+      if (!nonce) {
+        throw new Error('Backend debe devolver nonce para V2 - actualiza el backend');
+      }
 
-      // 3. Llamar al contrato
-      const iface = new ethers.Interface(GAME_ABI);
-      const data = iface.encodeFunctionData('harvest', [amount, deadline, signature]);
+      // 3. Llamar al contrato V2: harvestSigned(amount, nonce, deadline, signature)
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const fnSel = ethers.id('harvestSigned(uint256,uint256,uint256,bytes)').slice(0,10);
+      const fnData = fnSel + abiCoder.encode(
+        ['uint256','uint256','uint256','bytes'],
+        [amount, nonce, deadline, signature]
+      ).slice(2);
 
       const txResult = await mk.sendTransaction({
-        transactions: [{ to: GAME_CONTRACT, data }]
+        chainId: 480,
+        transactions: [{ to: GAME_CONTRACT, data: fnData }]
       });
+      const payload = txResult?.finalPayload || txResult?.data || txResult;
 
-      if (txResult?.finalPayload?.status === 'success') {
-        // Guardar timestamp de cosecha exitosa
-        localStorage.setItem('bfm:lastHarvest:' + playerAddress, String(now));
-        return { ok: true, amount: amountReadable, txHash: txResult.finalPayload.transaction_id };
+      if (payload?.status === 'error' || payload?.error_code) {
+        throw new Error('Cosecha rechazada: ' + (payload?.error_code || 'unknown'));
       }
-      throw new Error('Cosecha rechazada');
+      // Guardar timestamp de cosecha exitosa
+      localStorage.setItem('bfm:lastHarvest:' + playerAddress, String(now));
+      return { ok: true, amount: amountReadable, txHash: payload?.transaction_id || payload?.tx_hash };
     } catch (e) {
       console.error('harvestOnChain error:', e);
       return { ok: false, error: e.message };
@@ -3878,19 +3860,24 @@
       if (!mk) throw new Error('MiniKit no disponible');
       const toRarity = fromRarity + 1;
       if (toRarity > 9) throw new Error('No se puede fusionar el toro Supremo');
-      if (fromQty < 2) throw new Error('Mínimo 2 toros para fusionar');
+      // V2 requiere exactamente 5 toros para fusionar (FUSION_COST = 5)
+      if (fromQty < 5) throw new Error('Mínimo 5 toros para fusionar (V2)');
 
-      const iface = new ethers.Interface(GAME_ABI);
-      const data = iface.encodeFunctionData('fuseBulls', [fromRarity, toRarity, fromQty]);
+      // V2: fuseBulls(uint8 fromRarity) — toma 5 toros automáticamente
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const fnSel = ethers.id('fuseBulls(uint8)').slice(0,10);
+      const fnData = fnSel + abiCoder.encode(['uint8'], [fromRarity]).slice(2);
 
       const txResult = await mk.sendTransaction({
-        transactions: [{ to: GAME_CONTRACT, data }]
+        chainId: 480,
+        transactions: [{ to: GAME_CONTRACT, data: fnData }]
       });
+      const payload = txResult?.finalPayload || txResult?.data || txResult;
 
-      if (txResult?.finalPayload?.status === 'success') {
-        return { ok: true, fromRarity, toRarity, txHash: txResult.finalPayload.transaction_id };
+      if (payload?.status === 'error' || payload?.error_code) {
+        throw new Error('Fusión rechazada: ' + (payload?.error_code || 'unknown'));
       }
-      throw new Error('Fusión rechazada');
+      return { ok: true, fromRarity, toRarity, txHash: payload?.transaction_id || payload?.tx_hash };
     } catch (e) {
       console.error('fuseBullsOnChain error:', e);
       return { ok: false, error: e.message };
