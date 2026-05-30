@@ -2574,11 +2574,17 @@
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   function renderSaldo() {
-    document.getElementById('balance').innerHTML = fmt(state.balance) + '<small>$BFM</small>';
-    document.getElementById('balance-usd').textContent = '≈ $' + fmtUsd(state.balance) + ' USD';
-    document.getElementById('wallet-name').textContent = state.playerName || 'ganadero1';
-    document.getElementById('inv-common').textContent = state.inventory.common;
-    document.getElementById('inv-premium').textContent = state.inventory.premium;
+    // La caja "BFM del juego" fue eliminada. Solo actualizar elementos que existen.
+    const balanceEl = document.getElementById('balance');
+    if (balanceEl) balanceEl.innerHTML = fmt(state.balance) + '<small>$BFM</small>';
+    const balanceUsdEl = document.getElementById('balance-usd');
+    if (balanceUsdEl) balanceUsdEl.textContent = '≈ $' + fmtUsd(state.balance) + ' USD';
+    const walletNameEl = document.getElementById('wallet-name');
+    if (walletNameEl) walletNameEl.textContent = state.playerName || 'ganadero1';
+    const invCommonEl = document.getElementById('inv-common');
+    if (invCommonEl) invCommonEl.textContent = state.inventory.common;
+    const invPremiumEl = document.getElementById('inv-premium');
+    if (invPremiumEl) invPremiumEl.textContent = state.inventory.premium;
   }
 
   function renderStats() {
@@ -2628,20 +2634,30 @@
     const s = Math.floor(remaining % 60);
 
     const el = document.getElementById('cosecha-amount');
-    const decimals = rate < 0.01 ? 4 : (rate < 1 ? 3 : 2);
-    el.textContent = live.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-    document.getElementById('cosecha-usd').textContent = '$' + (live * TOKEN_PRICE).toFixed(6);
-    document.getElementById('cosecha-rate').textContent = rate.toFixed(4);
-    document.getElementById('cd-hrs').textContent = String(h).padStart(2,'0');
-    document.getElementById('cd-min').textContent = String(m).padStart(2,'0');
-    document.getElementById('cd-sec').textContent = String(s).padStart(2,'0');
+    if (el) {
+      const decimals = rate < 0.01 ? 4 : (rate < 1 ? 3 : 2);
+      el.textContent = live.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+    const cosechaUsdEl = document.getElementById('cosecha-usd');
+    if (cosechaUsdEl) cosechaUsdEl.textContent = '$' + (live * TOKEN_PRICE).toFixed(6);
+    const cosechaRateEl = document.getElementById('cosecha-rate');
+    if (cosechaRateEl) cosechaRateEl.textContent = rate.toFixed(4);
+    const cdHrsEl = document.getElementById('cd-hrs');
+    if (cdHrsEl) cdHrsEl.textContent = String(h).padStart(2,'0');
+    const cdMinEl = document.getElementById('cd-min');
+    if (cdMinEl) cdMinEl.textContent = String(m).padStart(2,'0');
+    const cdSecEl = document.getElementById('cd-sec');
+    if (cdSecEl) cdSecEl.textContent = String(s).padStart(2,'0');
 
     const btn = document.getElementById('cosecha-btn');
-    const claimable = Math.floor(live);
-    btn.disabled = claimable < 1;
-    btn.textContent = claimable < 1 ? t('no_btp_yet') : `${t('claim_word')} ${fmt(claimable)} 🤑`;
+    if (btn) {
+      const claimable = Math.floor(live);
+      btn.disabled = claimable < 1;
+      btn.textContent = claimable < 1 ? t('no_btp_yet') : `${t('claim_word')} ${fmt(claimable)} 🤑`;
+    }
 
-    document.getElementById('establo-subtitle').textContent =
+    const establoSub = document.getElementById('establo-subtitle');
+    if (establoSub) establoSub.textContent =
       `${state.owned.length} ${t('bulls')} · ${fedToros().length} ${t('producing_word')} · ${fmt(dailyRatePotential())} $BFM/${t('day').toLowerCase()}`;
   }
 
