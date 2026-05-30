@@ -1660,7 +1660,7 @@
   <div id="welcome-particles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
 
   <div style="max-width:420px;width:100%;position:relative;z-index:2">
-    <img src="https://raw.githubusercontent.com/andres2282/BFM-imagenes/main/logo.png" alt="BullFarm" onerror="this.outerHTML='<div style=&quot;font-size:90px&quot;>🐂🌾</div>'" style="width:200px;height:200px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 8px 32px rgba(255,215,0,0.5)) drop-shadow(0 0 20px rgba(132,204,22,0.3));animation:bullPulse 3.5s infinite ease-in-out" />
+    <img src="https://raw.githubusercontent.com/andres2282/bullfarm-imagenes-/main/logo-bullfarm.jpeg" alt="BullFarm" onerror="this.outerHTML='<div style=&quot;font-size:90px&quot;>🐂🌾</div>'" style="width:200px;height:200px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 8px 32px rgba(255,215,0,0.5)) drop-shadow(0 0 20px rgba(132,204,22,0.3));animation:bullPulse 3.5s infinite ease-in-out" />
 
     <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,11vw,58px);letter-spacing:5px;line-height:1;background:linear-gradient(180deg,#FFD700 0%,#F59E0B 60%,#B45309 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));margin-bottom:6px">BULLFARM</h1>
     <div style="font-family:'Cinzel',serif;font-weight:700;color:#84CC16;font-size:13px;letter-spacing:5px;margin-bottom:28px;text-transform:uppercase">★ Premium Ranch ★</div>
@@ -1690,7 +1690,7 @@
     <div class="top-logo-block">
       <button class="lang-btn" id="lang-btn" title="Cambiar idioma">🇪🇸</button>
       <div class="top-logo">
-        <div class="top-bull"><img src="https://raw.githubusercontent.com/andres2282/BFM-imagenes/main/logo.png" alt="logo" onerror="this.outerHTML='🔥🐂'" /></div>
+        <div class="top-bull"><img src="https://raw.githubusercontent.com/andres2282/bullfarm-imagenes-/main/logo-bullfarm.jpeg" alt="logo" onerror="this.outerHTML='🔥🐂'" /></div>
         <div class="top-title">BullFarm<span style="display:block;font-size:0.5em;letter-spacing:3px;color:var(--green-bright,#84CC16);font-family:'Cinzel',serif;font-weight:700">★ RANCH ★</span></div>
       </div>
     </div>
@@ -2348,7 +2348,7 @@
   // 🖼️ IMÁGENES desde GitHub (URL directa de raw.githubusercontent.com)
   // Versión con cache-busting para forzar carga fresca
   const IMG_VERSION = 'v' + Date.now();
-  const IMG_BASE = 'https://raw.githubusercontent.com/andres2282/BFM-imagenes/main/';
+  const IMG_BASE = 'https://raw.githubusercontent.com/andres2282/bullfarm-imagenes-/main/';
   const IMG_SUFFIX = '.png';
   function img(name) { return IMG_BASE + name + IMG_SUFFIX; }
 
@@ -2497,14 +2497,14 @@
 
   // ============= ESTADO =============
   let state = {
-    balance: 1000,
-    owned: [{ id: 0, fedUntil: Date.now() + 24*3600*1000 }],
-    inventory: { common: 3, premium: 0 },
+    balance: 0,
+    owned: [],
+    inventory: { common: 0, premium: 0 },
     lastClaim: Date.now(),
     totalEarned: 0,
     totalSpent: 0,
     playerName: 'ganadero1',
-    pool: POOL_INICIAL,
+    pool: 0,
     devWallet: 0,
     claimedTotal: 0,
     volume: 0,
@@ -2924,16 +2924,10 @@
         // Usar la primera rareza para la animación principal
         const wonId = rarities[0] !== undefined ? rarities[0] : pickFromPack(pack);
 
-        // Actualizar localStorage decorativo (hambre visual)
-        if (rarities.length > 0) {
-          rarities.forEach(r => {
-            state.owned.push({ id: r, fedUntil: Date.now() + 24*3600*1000 });
-          });
-        } else {
-          state.owned.push({ id: wonId, fedUntil: Date.now() + 24*3600*1000 });
-        }
+        // Re-sincronizar toros desde la blockchain (1 segundo de delay)
+        setTimeout(() => { if (window.syncBullsFromChain) window.syncBullsFromChain(); }, 2000);
+
         // El saldo se actualiza al refrescar (la blockchain manda)
-        await saveState();
         renderSaldo();
         showPackOpening(pack, wonId);
 
@@ -3066,18 +3060,8 @@
           toast(currentLang === 'es' ? 'Fusión rechazada: ' + result.error : 'Fusion failed: ' + result.error);
           return;
         }
-        // Reflejar el cambio visualmente (la blockchain es la fuente real)
-        let removed = 0;
-        state.owned = state.owned.filter(o => {
-          if (o.id === fromId && removed < fusion.qty) {
-            removed++;
-            return false;
-          }
-          return true;
-        });
-        state.owned.push({ id: fusion.to, fedUntil: Date.now() + 24*3600*1000 });
-        await saveState();
-        renderAll();
+        // Re-sincronizar desde la blockchain
+        setTimeout(() => { if (window.syncBullsFromChain) window.syncBullsFromChain(); }, 2000);
         toast(`⚡ Fusión on-chain exitosa: ${TOROS[fusion.to].name} ⛓️`);
         return;
       } catch (e) {
@@ -3943,6 +3927,8 @@
       // El nombre arriba también muestra la wallet corta como identidad principal
       document.getElementById('wallet-name').textContent = state.walletAddress.slice(0,6);
       fetchWalletBalance();
+      // 🔄 Sincronizar toros y stats desde el contrato (datos reales)
+      syncBullsFromChain();
     } else {
       document.getElementById('wb-addr').textContent = currentLang === 'es' ? 'modo demo' : 'demo mode';
       document.getElementById('wallet-balance').textContent = '—';
@@ -3950,6 +3936,40 @@
       if (topAddr) topAddr.textContent = currentLang === 'es' ? 'modo demo' : 'demo mode';
     }
   }
+
+  // ====== 🔄 SINCRONIZAR TOROS DESDE LA BLOCKCHAIN ======
+  // Lee los toros REALES del contrato y los pone en state.owned
+  async function syncBullsFromChain() {
+    if (!state.walletAddress) return;
+    if (!window.BullFarmChain) return;
+    try {
+      const bulls = await window.BullFarmChain.fetchPlayerBullsOnChain(state.walletAddress);
+      if (bulls === null) return;
+      // Reconstruir state.owned a partir de cantidades on-chain
+      // bulls[i] = cantidad de toros de rareza i (0..9)
+      const newOwned = [];
+      for (let rarity = 0; rarity < 10; rarity++) {
+        for (let n = 0; n < bulls[rarity]; n++) {
+          newOwned.push({ id: rarity, fedUntil: Date.now() + 24*3600*1000 });
+        }
+      }
+      state.owned = newOwned;
+
+      // Sincronizar stats reales
+      const stats = await window.BullFarmChain.fetchPlayerStatsOnChain(state.walletAddress);
+      if (stats) {
+        state.totalEarned = parseFloat(stats.totalHarvested || 0);
+        state.claimedTotal = parseFloat(stats.totalHarvested || 0);
+      }
+
+      await saveState();
+      if (typeof renderAll === 'function') renderAll();
+    } catch (e) {
+      console.error('syncBullsFromChain error:', e);
+    }
+  }
+  // Exponer globalmente para usar en otros lugares (ej. después de comprar)
+  window.syncBullsFromChain = syncBullsFromChain;
 
   function updateVerifiedBadge() {
     // Cambia el monedero del header a "verificado" si aplica
