@@ -4059,6 +4059,9 @@
       document.getElementById('view-' + btn.dataset.view).classList.add('active');
       if (btn.dataset.view === 'amigos') { checkReferrals(); renderInvite(); }
       if (btn.dataset.view === 'swap') renderSwap();
+      if (btn.dataset.view === 'tienda') renderTienda();
+      if (btn.dataset.view === 'establo') renderEstablo();
+      if (btn.dataset.view === 'fusion') renderFusion();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
