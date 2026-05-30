@@ -2907,6 +2907,13 @@
         const result = await window.BullFarmChain.buyPackOnChain(packNum, pack.currency, pack.price);
 
         if (!result.ok) {
+          // Si solo falta hacer approve, mostrar mensaje claro y volver a intentar
+          if (result.needsRetry) {
+            toast(currentLang === 'es' 
+              ? '✅ Aprobación lista. Toca de nuevo ABRIR SOBRE para comprar.' 
+              : '✅ Approval done. Tap OPEN PACK again to buy.');
+            return;
+          }
           toast(currentLang === 'es' ? 'Compra rechazada: ' + result.error : 'Purchase failed: ' + result.error);
           return;
         }
@@ -3709,7 +3716,7 @@
     try {
       const mk = window.MiniKit;
       if (!mk) throw new Error('MiniKit no disponible');
-      const playerAddress = window.userWallet;
+      const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
       // 1. Pedir rarezas al backend
@@ -3719,33 +3726,58 @@
         body: JSON.stringify({ packId: packIdNum })
       });
       if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error('Backend: ' + (err.error || 'error'));
+        const err = await resp.json().catch(() => ({}));
+        throw new Error('Backend: ' + (err.error || resp.statusText || 'error'));
       }
-      const { rarities } = await resp.json();
-
-      // 2. Asegurar approve
-      if (payToken === 'BFM') {
-        await ensureBfmApproved(playerAddress);
-      } else {
-        await ensureWldApproved(playerAddress);
+      const respJson = await resp.json();
+      const rarities = respJson.rarities;
+      if (!rarities || !Array.isArray(rarities) || rarities.length === 0) {
+        throw new Error('Backend no devolvió rarezas válidas');
       }
 
-      // 3. Llamar al contrato
+      // 2. Calcular packId como bytes32 (forma segura)
       const amountWei = ethers.parseEther(String(amountReadable));
-      const packIdBytes32 = ethers.zeroPadValue(ethers.toBeHex(packIdNum), 32);
+      const packIdBytes32 = '0x' + packIdNum.toString(16).padStart(64, '0');
+
+      // 3. Verificar allowance ANTES (no en bundle, separado)
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      const currentAllowance = await tokenContract.allowance(playerAddress, GAME_CONTRACT);
+
+      // 4. Si NO hay suficiente allowance, hacer SOLO approve (1 tx separada)
+      if (currentAllowance < amountWei) {
+        const approveIface = new ethers.Interface(ERC20_ABI);
+        const approveData = approveIface.encodeFunctionData('approve', [GAME_CONTRACT, MAX_UINT256]);
+        const approveResult = await mk.sendTransaction({
+          chainId: 480,
+          transactions: [{ to: tokenAddress, data: approveData }]
+        });
+        const approvePayload = approveResult?.finalPayload || approveResult?.data || approveResult;
+        if (approvePayload?.status === 'error' || approvePayload?.error_code) {
+          throw new Error('Approve rechazado: ' + (approvePayload?.error_code || 'unknown'));
+        }
+        // Esperar a que el approve se propague en la red (~4s en World Chain)
+        await new Promise(r => setTimeout(r, 5000));
+        // Retornar indicando que el usuario debe tocar de nuevo
+        return { ok: false, error: 'Aprobación lista. Toca ABRIR SOBRE de nuevo para comprar.', needsRetry: true };
+      }
+
+      // 5. Ya hay approve: llamar al contrato
       const iface = new ethers.Interface(GAME_ABI);
       const fnName = payToken === 'BFM' ? 'buyPackBFM' : 'buyPackWLD';
       const data = iface.encodeFunctionData(fnName, [packIdBytes32, amountWei, rarities]);
 
       const txResult = await mk.sendTransaction({
+        chainId: 480,
         transactions: [{ to: GAME_CONTRACT, data }]
       });
+      const payload = txResult?.finalPayload || txResult?.data || txResult;
 
-      if (txResult?.finalPayload?.status === 'success') {
-        return { ok: true, rarities, txHash: txResult.finalPayload.transaction_id };
+      if (payload?.status === 'error' || payload?.error_code) {
+        throw new Error('Compra rechazada: ' + (payload?.error_code || 'unknown'));
       }
-      throw new Error('Compra rechazada');
+      return { ok: true, rarities, txHash: payload?.transaction_id || payload?.tx_hash };
     } catch (e) {
       console.error('buyPackOnChain error:', e);
       return { ok: false, error: e.message };
