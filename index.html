@@ -1703,17 +1703,10 @@
     </div>
   </div>
 
-  <!-- SALDO -->
-  <div class="saldo-bar">
-    <div class="saldo-label">🎮 <span data-i18n="game_balance">BFM DEL JUEGO:</span></div>
-    <div class="saldo-amount" id="balance">1,000<small>$BFM</small></div>
-    <div class="saldo-usd" id="balance-usd">≈ $0.0060 USD</div>
-  </div>
-
-  <!-- SALDO REAL DE WALLET -->
-  <div class="wallet-balance-bar" id="wallet-balance-bar">
+  <!-- SALDO REAL DE WALLET (BFM en blockchain) -->
+  <div class="wallet-balance-bar" id="wallet-balance-bar" style="margin-top:14px">
     <div class="wb-left">
-      <div class="wb-label">👛 <span data-i18n="wallet_balance">BFM EN WALLET</span></div>
+      <div class="wb-label">💰 <span data-i18n="wallet_balance">BFM EN WALLET</span></div>
       <div class="wb-addr" id="wb-addr">—</div>
     </div>
     <div class="wb-right">
@@ -2703,7 +2696,6 @@
     const grid = document.getElementById('pack-grid');
     grid.innerHTML = '';
     for (const pack of PACKS) {
-      const afford = state.balance >= pack.price;
       const card = document.createElement('div');
       card.className = 'pack-card';
       card.style.setProperty('--pack-border', pack.borderColor);
@@ -2713,18 +2705,20 @@
       const probsHtml = pack.probs.map(p =>
         `<div><span>${TOROS[p.id].name}</span><b>${p.pct}%</b></div>`
       ).join('');
+      // Moneda correcta del sobre (BFM o WLD)
+      const currency = pack.currency || 'BFM';
       card.innerHTML = `
         <div class="pack-random-badge">1<br>TORO<br>RANDOM</div>
-        <div class="pack-brand">$BFM ${pack.brand}</div>
+        <div class="pack-brand">$${currency} ${pack.brand}</div>
         <div class="pack-bull-img"><img src="${pack.image}" alt="${pack.name}" onerror="this.outerHTML='${pack.emoji}'" /></div>
         <div class="pack-name">${pack.name}</div>
         <div class="pack-probs">${probsHtml}</div>
         <div class="pack-prices">
           <span class="pack-price-old">${fmt(pack.priceOld)}</span>
-          <span class="pack-price-new">${fmt(pack.price)}<span class="pack-price-unit">BFM</span></span>
+          <span class="pack-price-new">${fmt(pack.price)}<span class="pack-price-unit">${currency}</span></span>
         </div>
-        <button class="pack-buy" data-pack="${pack.id}" ${afford ? '' : 'disabled'}>
-          ${afford ? t('open_pack') : t('no_funds_btn')}
+        <button class="pack-buy" data-pack="${pack.id}">
+          ${t('open_pack')}
         </button>
       `;
       grid.appendChild(card);
@@ -2893,11 +2887,9 @@
     const pack = PACKS.find(p => p.id === packId);
     if (!pack) return;
 
-    // Verificar saldo local primero (rápido, evita ir a blockchain)
-    if (pack.currency === 'BFM' && state.balance < pack.price) {
-      toast(currentLang === 'es' ? 'SIN FONDOS BFM' : 'NO BFM FUNDS');
-      return;
-    }
+    // ⚠️ NO verificar state.balance — ese era el saldo falso simulado.
+    // Las verificaciones reales las hace el contrato cuando se firma la tx.
+    // Si el jugador no tiene fondos reales, World App lo dirá.
 
     // ============ ON-CHAIN ============
     // Si la wallet está conectada y MiniKit disponible, ir on-chain.
