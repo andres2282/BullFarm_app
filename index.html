@@ -4127,7 +4127,8 @@
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+      const view = document.getElementById('view-' + btn.dataset.view);
+      if (view) view.classList.add('active');
       if (btn.dataset.view === 'amigos') { checkReferrals(); renderInvite(); }
       if (btn.dataset.view === 'swap') renderSwap();
       if (btn.dataset.view === 'tienda') renderTienda();
@@ -4137,48 +4138,57 @@
     });
   });
 
+  // ============= LISTENERS (defensivos - no rompen si elemento no existe) =============
+  function safeListen(id, event, handler) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(event, handler);
+  }
+
+  // CRÍTICO: registrar verify-btn PRIMERO para que siempre funcione
+  safeListen('verify-btn', 'click', verifyWorldID);
+
   document.querySelectorAll('.sub-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.sub-content').forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById('sub-' + tab.dataset.sub).classList.add('active');
+      const sub = document.getElementById('sub-' + tab.dataset.sub);
+      if (sub) sub.classList.add('active');
       if (tab.dataset.sub === 'clasif') renderLeaderboard();
     });
   });
 
-  document.getElementById('cosecha-btn').addEventListener('click', claim);
-  document.getElementById('save-score').addEventListener('click', saveScore);
-  document.getElementById('btn-buy-food').addEventListener('click', () => {
+  safeListen('cosecha-btn', 'click', claim);
+  safeListen('save-score', 'click', saveScore);
+  safeListen('btn-buy-food', 'click', () => {
     const sh = document.getElementById('food-shop');
-    sh.style.display = sh.style.display === 'none' ? 'block' : 'none';
+    if (sh) sh.style.display = sh.style.display === 'none' ? 'block' : 'none';
   });
   document.querySelectorAll('.food-btn').forEach(b => {
     b.addEventListener('click', () => buyFood(b.dataset.food, +b.dataset.qty));
   });
 
-  document.getElementById('lang-btn').addEventListener('click', toggleLang);
+  safeListen('lang-btn', 'click', toggleLang);
 
   // Invitar
-  document.getElementById('invite-code-box').addEventListener('click', copyInviteCode);
-  document.getElementById('share-whatsapp').addEventListener('click', () => shareVia('whatsapp'));
-  document.getElementById('share-telegram').addEventListener('click', () => shareVia('telegram'));
-  document.getElementById('share-twitter').addEventListener('click', () => shareVia('twitter'));
-  document.getElementById('share-copy').addEventListener('click', () => shareVia('copy'));
-  document.getElementById('redeem-btn').addEventListener('click', redeemCode);
+  safeListen('invite-code-box', 'click', copyInviteCode);
+  safeListen('share-whatsapp', 'click', () => shareVia('whatsapp'));
+  safeListen('share-telegram', 'click', () => shareVia('telegram'));
+  safeListen('share-twitter', 'click', () => shareVia('twitter'));
+  safeListen('share-copy', 'click', () => shareVia('copy'));
+  safeListen('redeem-btn', 'click', redeemCode);
 
   // Swap UI (UniversalRouter / pool directo)
-  document.getElementById('swap-amount-in').addEventListener('input', onSwapInputChange);
+  safeListen('swap-amount-in', 'input', onSwapInputChange);
   document.querySelectorAll('.swap-pct-btn').forEach(b => {
     b.addEventListener('click', () => applyPercent(parseFloat(b.dataset.pct)));
   });
-  document.getElementById('swap-flip-btn').addEventListener('click', flipSwapTokens);
-  document.getElementById('swap-main-btn').addEventListener('click', executeSwap);
-  document.getElementById('copy-btp-contract').addEventListener('click', copyBtpContract);
+  safeListen('swap-flip-btn', 'click', flipSwapTokens);
+  safeListen('swap-main-btn', 'click', executeSwap);
+  safeListen('copy-btp-contract', 'click', copyBtpContract);
 
-  // World ID / bienvenida
-  document.getElementById('verify-btn').addEventListener('click', verifyWorldID);
-  document.getElementById('wb-refresh').addEventListener('click', fetchWalletBalance);
+  // Bienvenida / wallet
+  safeListen('wb-refresh', 'click', fetchWalletBalance);
 
   // ============= INIT =============
   (async function init() {
@@ -4203,6 +4213,7 @@
     setInterval(() => { renderCosecha(); }, 100);
     setInterval(() => {
       const el = document.getElementById('cosecha-amount');
+      if (!el) return;
       el.classList.remove('tick');
       void el.offsetWidth;
       el.classList.add('tick');
