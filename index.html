@@ -1925,9 +1925,9 @@
         </div>
       </div>
 
-      <!-- Botón principal -->
-      <button class="swap-main-btn" id="swap-main-btn" disabled>
-        <span id="swap-main-btn-text" data-i18n="enter_amount">INGRESA UN MONTO</span>
+      <!-- Botón principal - usa Quick Action OFICIAL de Worldcoin -->
+      <button class="swap-main-btn" id="swap-main-btn">
+        <span id="swap-main-btn-text">🌍 SWAP EN WORLD APP</span>
       </button>
 
       <!-- Estado de transacción -->
@@ -1936,9 +1936,9 @@
 
     <div class="help-box">
       <b>💡 <span data-i18n="about_swap">SOBRE EL SWAP</span></b>
-      <span data-i18n="swap_desc">El swap se realiza dentro de World App de forma nativa y segura.<br>
-      Tus tokens nunca salen de tu wallet hasta que confirmes.<br>
-      Usa el UniversalRouter oficial de Uniswap en World Chain.<br><br>
+      <span data-i18n="swap_desc">El swap usa el sistema NATIVO de World App.<br>
+      Al tocar el botón, se abre el swap oficial de Worldcoin con BFM y WLD ya cargados.<br>
+      100% seguro - tus tokens nunca salen de tu wallet hasta que confirmes.<br><br>
       <b style="color:var(--gold-bright)">Par disponible:</b> BFM ⇄ WLD</span>
     </div>
 
@@ -3464,23 +3464,15 @@
   function updateSwapButton() {
     const btn = document.getElementById('swap-main-btn');
     const txt = document.getElementById('swap-main-btn-text');
+    if (!btn || !txt) return;
+    // Con Quick Action, el botón siempre está habilitado.
+    // El Swap nativo de World App valida saldos y liquidez por su cuenta.
+    btn.disabled = false;
     const amt = parseFloat(swapState.amountIn) || 0;
-    const bal = swapState.walletBalances[swapState.from] || 0;
-    if (!state.walletAddress) {
-      btn.disabled = true;
-      txt.textContent = currentLang === 'es' ? 'CONECTA WALLET' : 'CONNECT WALLET';
-    } else if (amt <= 0) {
-      btn.disabled = true;
-      txt.textContent = currentLang === 'es' ? 'INGRESA UN MONTO' : 'ENTER AN AMOUNT';
-    } else if (amt > bal) {
-      btn.disabled = true;
-      txt.textContent = currentLang === 'es' ? `SALDO ${swapState.from} INSUFICIENTE` : `INSUFFICIENT ${swapState.from}`;
-    } else if (swapState.amountOut <= 0) {
-      btn.disabled = true;
-      txt.textContent = currentLang === 'es' ? 'SIN LIQUIDEZ' : 'NO LIQUIDITY';
+    if (amt > 0) {
+      txt.textContent = `🌍 SWAP ${swapState.from} → ${swapState.to}`;
     } else {
-      btn.disabled = false;
-      txt.textContent = `SWAP ${swapState.from} → ${swapState.to}`;
+      txt.textContent = currentLang === 'es' ? '🌍 ABRIR SWAP EN WORLD APP' : '🌍 OPEN SWAP IN WORLD APP';
     }
   }
 
@@ -3510,97 +3502,60 @@
    * MiniKit empaqueta ambas en una sola firma del usuario.
    * Slippage: 1% fijo.
    */
+  // ============= SWAP NATIVO OFICIAL DE WORLDCOIN =============
+  // Usa el Swap Quick Action oficial de World App
+  // Docs: https://docs.world.org/mini-apps/sharing/swap-qa
+  // 
+  // Esto abre el SWAP NATIVO de World App con BFM y WLD preconfigurados.
+  // Es la solución oficial recomendada por Worldcoin.
   async function executeSwap() {
     const mk = window._MiniKit || window.MiniKit;
     if (!mk || !(mk.isInstalled && mk.isInstalled())) {
       toast(currentLang === 'es' ? '⚠ Abre dentro de World App' : '⚠ Open inside World App');
       return;
     }
-    if (swapState.swapping) return;
-    swapState.swapping = true;
-
-    const btn = document.getElementById('swap-main-btn');
-    const txt = document.getElementById('swap-main-btn-text');
-    const status = document.getElementById('swap-tx-status');
-    btn.disabled = true;
-    txt.textContent = currentLang === 'es' ? '⏳ PROCESANDO...' : '⏳ PROCESSING...';
-    status.style.display = 'block';
-    status.textContent = currentLang === 'es' ? 'Preparando transacción...' : 'Preparing transaction...';
 
     try {
-      await initPool();
-      const tokenIn = tokenAddr(swapState.from);
-      const tokenOut = tokenAddr(swapState.to);
-      const amountInWei = ethers.parseUnits(String(swapState.amountIn), 18);
-      const amountOutMinFloat = swapState.amountOut * 0.97; // 3% slippage
-      const amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(18), 18);
+      // App ID oficial del Swap de Worldcoin
+      const SWAP_APP_ID = 'app_6c5c5717c77abe83be8814c032c3a6f9';
+      const SOURCE_APP_ID = 'app_41af02a5659ff3d0e8206bc2dba546b1'; // BullFarm app_id
+      const SOURCE_APP_NAME = 'BullFarm';
 
-      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      // Tomar tokens del swap actual (from/to)
+      const fromToken = tokenAddr(swapState.from);
+      const toToken = tokenAddr(swapState.to);
+      const amountStr = swapState.amountIn > 0 ? String(swapState.amountIn) : '';
 
-      // ============= PATRÓN OFICIAL UNIVERSAL ROUTER + PERMIT2 =============
-      // Paso 1: Permit2.approve(token, UNIVERSAL_ROUTER, amount, expiration=0)
-      const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
-      const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
-        ['address','address','uint160','uint48'],
-        [tokenIn, UNIVERSAL_ROUTER, amountInWei, 0]
-      ).slice(2);
-
-      // Paso 2: UniversalRouter.execute(commands, inputs, deadline)
-      // Comando 0x00 = V3_SWAP_EXACT_IN
-      // Path: tokenIn → fee → tokenOut (encoded as bytes)
-      const feeHex = BFM_POOL_FEE.toString(16).padStart(6, '0'); // fee como 3 bytes hex
-      const path = '0x' + tokenIn.slice(2).toLowerCase() + feeHex + tokenOut.slice(2).toLowerCase();
-
-      // Input para V3_SWAP_EXACT_IN:
-      // (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
-      const swapInput = abiCoder.encode(
-        ['address', 'uint256', 'uint256', 'bytes', 'bool'],
-        [state.walletAddress, amountInWei, amountOutMinWei, path, true]
-      );
-
-      const commands = '0x00'; // V3_SWAP_EXACT_IN
-      const inputs = [swapInput];
-      const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 min
-
-      const executeSel = ethers.id('execute(bytes,bytes[],uint256)').slice(0,10);
-      const executeData = executeSel + abiCoder.encode(
-        ['bytes', 'bytes[]', 'uint256'],
-        [commands, inputs, deadline]
-      ).slice(2);
-
-      status.textContent = currentLang === 'es' ? 'Firma en tu wallet...' : 'Sign in your wallet...';
-      // Bundle: Permit2.approve + UniversalRouter.execute
-      const result = await mk.sendTransaction({
-        chainId: 480,
-        transactions: [
-          { to: PERMIT2,          data: permit2ApproveData },
-          { to: UNIVERSAL_ROUTER, data: executeData }
-        ]
+      // Construir el path con parámetros (ejemplo oficial Worldcoin)
+      const params = new URLSearchParams({
+        fromToken: fromToken,
+        toToken: toToken,
+        sourceAppId: SOURCE_APP_ID,
+        sourceAppName: SOURCE_APP_NAME
       });
-      const payload = result?.finalPayload || result?.data || result;
 
-      if (payload?.status === 'error' || payload?.error_code) {
-        const errMsg = (payload?.error_code || payload?.message || 'unknown').slice(0, 60);
-        status.textContent = (currentLang === 'es' ? '❌ Error: ' : '❌ Error: ') + errMsg;
-        toast(currentLang === 'es' ? '❌ Swap rechazado' : '❌ Swap rejected');
-      } else {
-        status.textContent = currentLang === 'es' ? '✅ ¡Swap completado!' : '✅ Swap completed!';
-        toast(currentLang === 'es' ? '🎉 ¡Swap exitoso!' : '🎉 Swap successful!');
-        document.getElementById('swap-amount-in').value = '';
-        document.getElementById('swap-amount-out').value = '';
-        document.getElementById('swap-rate-display').textContent = '—';
-        setTimeout(refreshSwapBalances, 4000);
+      // Si hay cantidad, agregarla
+      if (amountStr) {
+        // Convertir a wei (la API espera el valor en la unidad base)
+        const amountWei = ethers.parseUnits(amountStr, 18).toString();
+        params.set('amount', amountWei);
       }
+
+      const fullPath = '/?' + params.toString();
+      const queryString = `https://worldcoin.org/mini-app?app_id=${SWAP_APP_ID}&path=${encodeURIComponent(fullPath)}`;
+
+      console.log('Opening Worldcoin Swap:', queryString);
+
+      // Abrir el link del Swap oficial dentro de World App
+      // Usar window.location para que abra en el mismo flujo de World App
+      window.location.href = queryString;
     } catch(e) {
-      const msg = (e.message || '').slice(0, 80);
-      status.textContent = (currentLang === 'es' ? '❌ Error: ' : '❌ Error: ') + msg;
-      console.log('executeSwap error:', e);
-    } finally {
-      swapState.swapping = false;
-      updateSwapButton();
-      setTimeout(() => { status.style.display = 'none'; }, 8000);
+      console.error('executeSwap error:', e);
+      toast(currentLang === 'es' ? '❌ Error: ' + e.message : '❌ Error: ' + e.message);
     }
   }
+
+  // (Función legacy obsoleta eliminada — ahora usamos Quick Action oficial)
 
   async function copyBtpContract() {
     try {
