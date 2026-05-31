@@ -3532,17 +3532,20 @@
       const tokenIn = tokenAddr(swapState.from);
       const tokenOut = tokenAddr(swapState.to);
       const amountInWei = ethers.parseUnits(String(swapState.amountIn), 18);
-      // 1% slippage
-      const amountOutMinFloat = swapState.amountOut * 0.99;
+      // 3% slippage (más tolerante para evitar reverts)
+      const amountOutMinFloat = swapState.amountOut * 0.97;
       const amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(18), 18);
 
-      // 1. Approve al SwapRouter02
-      const erc20Iface = new ethers.Interface([
-        'function approve(address spender, uint256 amount) returns (bool)'
-      ]);
-      const approveData = erc20Iface.encodeFunctionData('approve', [SWAP_ROUTER_02, amountInWei]);
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-      // 2. exactInputSingle al SwapRouter02
+      // 1. Permit2.approve(token, spender=SwapRouter, amount, expiration=0)
+      const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [tokenIn, SWAP_ROUTER_02, amountInWei, 0]
+      ).slice(2);
+
+      // 2. SwapRouter02.exactInputSingle(...) — el router usa permit2.transferFrom internamente
       const routerIface = new ethers.Interface(SWAP_ROUTER_ABI);
       const swapData = routerIface.encodeFunctionData('exactInputSingle', [{
         tokenIn: tokenIn,
@@ -3555,11 +3558,12 @@
       }]);
 
       status.textContent = currentLang === 'es' ? 'Firma en tu wallet...' : 'Sign in your wallet...';
+      // Patrón oficial Worldcoin: bundle Permit2.approve + función
       const result = await mk.sendTransaction({
         chainId: 480,
         transactions: [
-          { to: tokenIn,          data: approveData },
-          { to: SWAP_ROUTER_02,   data: swapData }
+          { to: PERMIT2,         data: permit2ApproveData },
+          { to: SWAP_ROUTER_02,  data: swapData }
         ]
       });
       const payload = result?.finalPayload || result?.data || result;
