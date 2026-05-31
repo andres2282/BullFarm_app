@@ -3528,42 +3528,53 @@
     status.textContent = currentLang === 'es' ? 'Preparando transacción...' : 'Preparing transaction...';
 
     try {
-      await initPool(); // asegurar fee correcto
+      await initPool();
       const tokenIn = tokenAddr(swapState.from);
       const tokenOut = tokenAddr(swapState.to);
       const amountInWei = ethers.parseUnits(String(swapState.amountIn), 18);
-      // 3% slippage (más tolerante para evitar reverts)
-      const amountOutMinFloat = swapState.amountOut * 0.97;
+      const amountOutMinFloat = swapState.amountOut * 0.97; // 3% slippage
       const amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(18), 18);
 
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-      // 1. Permit2.approve(token, spender=SwapRouter, amount, expiration=0)
+      // ============= PATRÓN OFICIAL UNIVERSAL ROUTER + PERMIT2 =============
+      // Paso 1: Permit2.approve(token, UNIVERSAL_ROUTER, amount, expiration=0)
       const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
       const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
         ['address','address','uint160','uint48'],
-        [tokenIn, SWAP_ROUTER_02, amountInWei, 0]
+        [tokenIn, UNIVERSAL_ROUTER, amountInWei, 0]
       ).slice(2);
 
-      // 2. SwapRouter02.exactInputSingle(...) — el router usa permit2.transferFrom internamente
-      const routerIface = new ethers.Interface(SWAP_ROUTER_ABI);
-      const swapData = routerIface.encodeFunctionData('exactInputSingle', [{
-        tokenIn: tokenIn,
-        tokenOut: tokenOut,
-        fee: BFM_POOL_FEE,
-        recipient: state.walletAddress,
-        amountIn: amountInWei,
-        amountOutMinimum: amountOutMinWei,
-        sqrtPriceLimitX96: 0n
-      }]);
+      // Paso 2: UniversalRouter.execute(commands, inputs, deadline)
+      // Comando 0x00 = V3_SWAP_EXACT_IN
+      // Path: tokenIn → fee → tokenOut (encoded as bytes)
+      const feeHex = BFM_POOL_FEE.toString(16).padStart(6, '0'); // fee como 3 bytes hex
+      const path = '0x' + tokenIn.slice(2).toLowerCase() + feeHex + tokenOut.slice(2).toLowerCase();
+
+      // Input para V3_SWAP_EXACT_IN:
+      // (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+      const swapInput = abiCoder.encode(
+        ['address', 'uint256', 'uint256', 'bytes', 'bool'],
+        [state.walletAddress, amountInWei, amountOutMinWei, path, true]
+      );
+
+      const commands = '0x00'; // V3_SWAP_EXACT_IN
+      const inputs = [swapInput];
+      const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 min
+
+      const executeSel = ethers.id('execute(bytes,bytes[],uint256)').slice(0,10);
+      const executeData = executeSel + abiCoder.encode(
+        ['bytes', 'bytes[]', 'uint256'],
+        [commands, inputs, deadline]
+      ).slice(2);
 
       status.textContent = currentLang === 'es' ? 'Firma en tu wallet...' : 'Sign in your wallet...';
-      // Patrón oficial Worldcoin: bundle Permit2.approve + función
+      // Bundle: Permit2.approve + UniversalRouter.execute
       const result = await mk.sendTransaction({
         chainId: 480,
         transactions: [
-          { to: PERMIT2,         data: permit2ApproveData },
-          { to: SWAP_ROUTER_02,  data: swapData }
+          { to: PERMIT2,          data: permit2ApproveData },
+          { to: UNIVERSAL_ROUTER, data: executeData }
         ]
       });
       const payload = result?.finalPayload || result?.data || result;
