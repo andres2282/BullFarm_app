@@ -3492,8 +3492,16 @@
       await initPool();
       const tokenIn = tokenAddr(swapState.from);
       const amountInWei = ethers.parseUnits(String(swapState.amountIn), 18);
-      const amountOutMinFloat = swapState.amountOut * 0.97; // 3% slippage
-      const amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(18), 18);
+      // Slippage 10% - más permisivo para evitar revert en swap WLD→BFM (cantidades grandes)
+      const amountOutMinFloat = swapState.amountOut * 0.90;
+      // Para cantidades muy grandes (millones), usar BigInt directo en vez de parseUnits con string
+      let amountOutMinWei;
+      try {
+        amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(6), 18);
+      } catch (e) {
+        // Fallback: aceptar cualquier cantidad (slippage máximo)
+        amountOutMinWei = 0n;
+      }
 
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
@@ -3531,11 +3539,15 @@
         ]
       });
       const payload = result?.finalPayload || result?.data || result;
+      console.log('SWAP RESULT FULL:', JSON.stringify(payload));
 
       if (payload?.status === 'error' || payload?.error_code) {
-        const errMsg = (payload?.error_code || payload?.message || 'unknown').slice(0, 60);
-        status.textContent = (currentLang === 'es' ? '❌ Error: ' : '❌ Error: ') + errMsg;
-        toast(currentLang === 'es' ? '❌ Swap rechazado' : '❌ Swap rejected');
+        const errCode = payload?.error_code || 'unknown';
+        const errDetails = payload?.details || payload?.message || JSON.stringify(payload).slice(0, 200);
+        const errMsg = (errCode + ' | ' + errDetails).slice(0, 120);
+        status.textContent = (currentLang === 'es' ? '❌ ' : '❌ ') + errMsg;
+        console.error('SWAP ERROR:', payload);
+        toast(currentLang === 'es' ? '❌ ' + errCode : '❌ ' + errCode);
       } else {
         status.textContent = currentLang === 'es' ? '✅ ¡Swap completado!' : '✅ Swap completed!';
         toast(currentLang === 'es' ? '🎉 ¡Swap exitoso!' : '🎉 Swap successful!');
