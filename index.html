@@ -3881,12 +3881,13 @@
     btn.disabled = true;
     btnText.textContent = currentLang === 'es' ? '⏳ Verificando...' : '⏳ Verifying...';
 
-    // Si no está dentro de World App, permitir entrar en modo demo (para pruebas en navegador)
+    // ⛔ SIN modo demo: REQUIERE estar dentro de World App para entrar.
     if (!mk || !(mk.isInstalled && mk.isInstalled())) {
       status.innerHTML = currentLang === 'es'
-        ? '⚠ Abre dentro de World App para verificar.<br>Entrando en modo demo...'
-        : '⚠ Open inside World App to verify.<br>Entering demo mode...';
-      setTimeout(() => enterGame(false), 1800);
+        ? '❌ Esta app SOLO funciona dentro de World App.<br>Abre BullFarm desde World App.'
+        : '❌ This app ONLY works inside World App.<br>Open BullFarm from World App.';
+      btn.disabled = false;
+      btnText.textContent = currentLang === 'es' ? '🌍 REINTENTAR' : '🌍 RETRY';
       return;
     }
 
@@ -3914,10 +3915,17 @@
       state.walletConnected = !!state.walletAddress;
       state.verified = verified || state.walletConnected;
 
-      // Exponer wallet globalmente para funciones on-chain (BullFarmChain.*)
-      if (state.walletAddress) {
-        window.userWallet = state.walletAddress;
+      // Si no se conectó la wallet, rechazar
+      if (!state.walletAddress) {
+        status.innerHTML = currentLang === 'es'
+          ? '❌ Wallet no conectada. Intenta de nuevo.'
+          : '❌ Wallet not connected. Try again.';
+        btn.disabled = false;
+        btnText.textContent = currentLang === 'es' ? '🌍 REINTENTAR' : '🌍 RETRY';
+        return;
       }
+
+      window.userWallet = state.walletAddress;
 
       await saveState();
       status.textContent = currentLang === 'es' ? '✓ ¡Verificado!' : '✓ Verified!';
@@ -3929,30 +3937,25 @@
     }
   }
 
-  // Entrar al juego (ocultar bienvenida)
+  // Entrar al juego (ocultar bienvenida) - SOLO con wallet real conectada
   function enterGame(verified) {
+    if (!state.walletAddress) {
+      console.error('enterGame llamado sin wallet - bloqueado');
+      return;
+    }
     document.getElementById('welcome-screen').style.display = 'none';
     document.getElementById('app-wrapper').style.display = 'block';
     state.verified = verified;
     saveState();
     updateVerifiedBadge();
-    if (state.walletAddress) {
-      const short = state.walletAddress.slice(0,6) + '...' + state.walletAddress.slice(-4);
-      document.getElementById('wb-addr').textContent = short;
-      // Mostrar la wallet real arriba como identidad del usuario
-      const topAddr = document.getElementById('top-wallet-addr');
-      if (topAddr) topAddr.textContent = short;
-      // El nombre arriba también muestra la wallet corta como identidad principal
-      document.getElementById('wallet-name').textContent = state.walletAddress.slice(0,6);
-      fetchWalletBalance();
-      // 🔄 Sincronizar toros y stats desde el contrato (datos reales)
-      syncBullsFromChain();
-    } else {
-      document.getElementById('wb-addr').textContent = currentLang === 'es' ? 'modo demo' : 'demo mode';
-      document.getElementById('wallet-balance').textContent = '—';
-      const topAddr = document.getElementById('top-wallet-addr');
-      if (topAddr) topAddr.textContent = currentLang === 'es' ? 'modo demo' : 'demo mode';
-    }
+    const short = state.walletAddress.slice(0,6) + '...' + state.walletAddress.slice(-4);
+    document.getElementById('wb-addr').textContent = short;
+    const topAddr = document.getElementById('top-wallet-addr');
+    if (topAddr) topAddr.textContent = short;
+    document.getElementById('wallet-name').textContent = state.walletAddress.slice(0,6);
+    fetchWalletBalance();
+    // 🔄 Sincronizar toros y stats desde el contrato (datos reales)
+    syncBullsFromChain();
   }
 
   // ====== 🔄 SINCRONIZAR TOROS DESDE LA BLOCKCHAIN ======
