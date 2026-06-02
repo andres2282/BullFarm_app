@@ -1925,9 +1925,9 @@
         </div>
       </div>
 
-      <!-- Botón principal - usa Quick Action OFICIAL de Worldcoin -->
-      <button class="swap-main-btn" id="swap-main-btn">
-        <span id="swap-main-btn-text">🌍 SWAP EN WORLD APP</span>
+      <!-- Botón principal - usa BullFarmSwapper con Permit2 -->
+      <button class="swap-main-btn" id="swap-main-btn" disabled>
+        <span id="swap-main-btn-text" data-i18n="enter_amount">INGRESA UN MONTO</span>
       </button>
 
       <!-- Estado de transacción -->
@@ -1936,9 +1936,9 @@
 
     <div class="help-box">
       <b>💡 <span data-i18n="about_swap">SOBRE EL SWAP</span></b>
-      <span data-i18n="swap_desc">El swap usa el sistema NATIVO de World App.<br>
-      Al tocar el botón, se abre el swap oficial de Worldcoin con BFM y WLD ya cargados.<br>
-      100% seguro - tus tokens nunca salen de tu wallet hasta que confirmes.<br><br>
+      <span data-i18n="swap_desc">El swap se realiza dentro de World App de forma nativa y segura.<br>
+      Usa Permit2 oficial + contrato propio BullFarmSwapper.<br>
+      Tus tokens nunca salen de tu wallet hasta que confirmes.<br><br>
       <b style="color:var(--gold-bright)">Par disponible:</b> BFM ⇄ WLD</span>
     </div>
 
@@ -2018,33 +2018,11 @@
   </section>
 
   <!-- VIEW: LOTERÍA (mantenimiento) -->
-  <section class="view" id="view-loteria">
-    <div style="text-align:center;padding:50px 20px;background:linear-gradient(135deg,var(--red),var(--black-2),var(--black));border:3px solid var(--gold-bright);border-radius:24px;box-shadow:0 0 0 3px var(--black),0 0 0 6px var(--red-dark),0 20px 60px rgba(252,211,77,0.3)">
-      <div style="font-size:72px;margin-bottom:12px;animation:bullPulse 3s infinite">🎰</div>
-      <div style="background:var(--gold-bright);color:var(--black);font-family:Anton,sans-serif;font-size:12px;letter-spacing:3px;padding:5px 14px;display:inline-block;margin-bottom:14px;box-shadow:3px 3px 0 var(--black);animation:blink 1.4s infinite;border-radius:14px" data-i18n="maintenance_badge">🚧 EN MANTENIMIENTO 🚧</div>
-      <div style="font-family:Anton,sans-serif;font-size:clamp(28px,7vw,42px);color:var(--gold-bright);letter-spacing:3px;line-height:1;margin-bottom:8px;text-shadow:3px 3px 0 var(--black),6px 6px 0 var(--red-dark)" data-i18n="coming_soon">PRÓXIMAMENTE</div>
-      <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;color:var(--gold-pale);margin-bottom:18px" data-i18n="weekly_lottery">— Lotería Semanal $BFM —</div>
-      <div style="background:var(--black);border:2px dashed var(--gold-bright);border-radius:20px;padding:14px;margin:14px 0">
-        <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);letter-spacing:2px" data-i18n="guaranteed_prize">💎 PREMIO GARANTIZADO 💎</div>
-        <div style="font-family:Anton,sans-serif;font-size:clamp(36px,9vw,52px);color:var(--gold-bright);line-height:1;margin:6px 0;text-shadow:0 0 16px var(--gold-bright),3px 3px 0 var(--red-dark)">1.000.000</div>
-        <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--white)" data-i18n="btp_per_week">$BFM por semana</div>
-      </div>
-      <div style="background:rgba(0,0,0,0.5);padding:12px;border-left:3px solid var(--gold-bright);font-family:JetBrains Mono,monospace;font-size:12px;color:var(--gold-pale);line-height:1.7;text-align:left;border-radius:14px" data-i18n="lottery_features">
-        🎟️ <b style="color:var(--gold-bright)">Boletos a 500 BFM</b><br>
-        🏆 <b style="color:var(--gold-bright)">Top 3 ganadores</b> (50/30/20)<br>
-        ⏰ <b style="color:var(--gold-bright)">Sorteo cada domingo</b><br>
-        📈 <b style="color:var(--gold-bright)">El bote crece</b> con cada boleto
-      </div>
-      <div style="background:var(--red);color:var(--white);font-family:Anton,sans-serif;font-size:18px;letter-spacing:3px;padding:12px;margin-top:14px;border:2px solid var(--gold-bright);border-radius:18px">
-        <span data-i18n="available">DISPONIBLE</span> <span style="color:var(--gold-bright);animation:blink 1s infinite" data-i18n="very_soon">MUY PRONTO</span>
-      </div>
-    </div>
-  </section>
 
 </div>
 </div>
 
-<!-- BOTTOM NAV -->
+<!-- BOTTOM NAV (sin lotería - removed per Worldcoin guideline: no chance based games) -->
 <div class="bottom-nav">
   <button class="nav-btn active" data-view="inicio"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav_home">Inicio</span></button>
   <button class="nav-btn" data-view="tienda"><span class="nav-icon">🛒</span><span class="nav-label" data-i18n="nav_shop">Tienda</span></button>
@@ -2052,7 +2030,6 @@
   <button class="nav-btn" data-view="fusion"><span class="nav-icon">⚡</span><span class="nav-label" data-i18n="nav_fuse">Fusionar</span></button>
   <button class="nav-btn" data-view="swap"><span class="nav-icon">💱</span><span class="nav-label" data-i18n="nav_swap">Swap</span></button>
   <button class="nav-btn" data-view="amigos"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav_invite">Invitar</span></button>
-  <button class="nav-btn" data-view="loteria"><span class="nav-icon">🎰</span><span class="nav-label" data-i18n="nav_lottery">Lotería</span></button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -2360,112 +2337,82 @@
   ];
 
   // SOBRES con precios reales (BFM o WLD según el sobre)
+  // ⚠️ V3 SIN AZAR: Cada "pack" es realmente UN TORO de la rareza exacta.
+  // El nombre PACKS se mantiene por compatibilidad con el código UI, pero
+  // representa toros individuales que se compran directamente.
+  // probs ya no se usa para azar - solo informativo (siempre 100% rareza X)
   const PACKS = [
     {
-      id: 'comun',  name: 'COMÚN',  brand: 'BULL', emoji: '🐂', image: img('sobre_comun'),
+      id: 'comun',  name: 'TORO COMÚN',  brand: 'BULL', emoji: '🐂', image: img('sobre_comun'),
       currency: 'BFM',
-      priceOld: 1800,   price: 1500,
+      priceOld: 250,   price: 200,
       borderColor: '#9aa0a6', glow: '#d4d4d4',
       bg1: '#1a1a1a', bg2: '#000',
-      probs: [
-        { id: 0, pct: 80 },
-        { id: 1, pct: 20 },
-      ]
+      probs: [ { id: 0, pct: 100 } ]
     },
     {
-      id: 'rural', name: 'RURAL', brand: 'BULL', emoji: '🐃', image: img('sobre_rural'),
+      id: 'rural', name: 'TORO RURAL', brand: 'BULL', emoji: '🐃', image: img('sobre_rural'),
       currency: 'BFM',
-      priceOld: 6000,   price: 5000,
+      priceOld: 1500,   price: 1200,
       borderColor: '#4ade80', glow: '#22c55e',
       bg1: '#0a2e0a', bg2: '#000',
-      probs: [
-        { id: 1, pct: 70 },
-        { id: 2, pct: 25 },
-        { id: 0, pct: 5 },
-      ]
+      probs: [ { id: 1, pct: 100 } ]
     },
     {
-      id: 'bravo', name: 'BRAVO', brand: 'BULL', emoji: '🐂', image: img('sobre_bravo'),
+      id: 'bravo', name: 'TORO BRAVO', brand: 'BULL', emoji: '🐂', image: img('sobre_bravo'),
       currency: 'BFM',
-      priceOld: 18000,  price: 15000,
+      priceOld: 4200,  price: 3500,
       borderColor: '#fb923c', glow: '#f97316',
       bg1: '#2e1500', bg2: '#000',
-      probs: [
-        { id: 2, pct: 60 },
-        { id: 3, pct: 30 },
-        { id: 4, pct: 10 },
-      ]
+      probs: [ { id: 2, pct: 100 } ]
     },
     {
-      id: 'epico', name: 'ÉPICO', brand: 'BULL', emoji: '🐃', image: img('sobre_epico'),
+      id: 'epico', name: 'TORO ÉPICO', brand: 'BULL', emoji: '🐃', image: img('sobre_epico'),
       currency: 'BFM',
-      priceOld: 50000,  price: 40000,
+      priceOld: 12000,  price: 9500,
       borderColor: '#38bdf8', glow: '#0ea5e9',
       bg1: '#001a2e', bg2: '#000',
-      probs: [
-        { id: 3, pct: 50 },
-        { id: 4, pct: 35 },
-        { id: 5, pct: 15 },
-      ]
+      probs: [ { id: 3, pct: 100 } ]
     },
     {
-      id: 'alfa',  name: 'ALFA',  brand: 'BULL', emoji: '🐂', image: img('sobre_alfa'),
+      id: 'alfa',  name: 'TORO ALFA',  brand: 'BULL', emoji: '🐂', image: img('sobre_alfa'),
       currency: 'WLD',
-      priceOld: 18,  price: 15,
+      priceOld: 6,  price: 5,
       borderColor: '#facc15', glow: '#eab308',
       bg1: '#2e2400', bg2: '#000',
-      probs: [
-        { id: 5, pct: 55 },
-        { id: 6, pct: 30 },
-        { id: 7, pct: 15 },
-      ]
+      probs: [ { id: 4, pct: 100 } ]
     },
     {
-      id: 'legend', name: 'LEGENDARIO', brand: 'BULL', emoji: '🐃', image: img('sobre_legendario'),
+      id: 'legend', name: 'TORO LEGEND', brand: 'BULL', emoji: '🐃', image: img('sobre_legendario'),
       currency: 'WLD',
-      priceOld: 50, price: 40,
+      priceOld: 15, price: 12,
       borderColor: '#c084fc', glow: '#a855f7',
       bg1: '#1a0033', bg2: '#000',
-      probs: [
-        { id: 6, pct: 50 },
-        { id: 7, pct: 35 },
-        { id: 8, pct: 15 },
-      ]
+      probs: [ { id: 5, pct: 100 } ]
     },
     {
-      id: 'divino', name: 'DIVINO', brand: 'BULL', emoji: '🐂', image: img('sobre_divino'),
+      id: 'divino', name: 'TORO DIVINO', brand: 'BULL', emoji: '🐂', image: img('sobre_divino'),
       currency: 'WLD',
-      priceOld: 120, price: 100,
+      priceOld: 35, price: 28,
       borderColor: '#06b6d4', glow: '#0891b2',
       bg1: '#001a1a', bg2: '#000',
-      probs: [
-        { id: 7, pct: 50 },
-        { id: 8, pct: 35 },
-        { id: 9, pct: 15 },
-      ]
+      probs: [ { id: 6, pct: 100 } ]
     },
     {
-      id: 'supremo', name: 'SUPREMO', brand: 'BULL', emoji: '🐃', image: img('sobre_supremo'),
+      id: 'supremo', name: 'TORO SUPREMO', brand: 'BULL', emoji: '🐃', image: img('sobre_supremo'),
       currency: 'WLD',
-      priceOld: 300, price: 250,
+      priceOld: 75, price: 60,
       borderColor: '#ef4444', glow: '#dc2626',
       bg1: '#2e0000', bg2: '#000',
-      probs: [
-        { id: 8, pct: 70 },
-        { id: 9, pct: 30 },
-      ]
+      probs: [ { id: 7, pct: 100 } ]
     },
     {
-      id: 'god', name: 'GOD PACK', brand: '👑 BULL', emoji: '🐂', image: img('sobre_god'),
+      id: 'god', name: 'TORO GOD', brand: '👑 BULL', emoji: '🐂', image: img('sobre_god'),
       currency: 'WLD',
-      priceOld: 750, price: 600,
+      priceOld: 160, price: 130,
       borderColor: '#FFD700', glow: '#f59e0b',
       bg1: '#3d2a00', bg2: '#1a1a00',
-      probs: [
-        { id: 9, pct: 60 },
-        { id: 8, pct: 30 },
-        { id: 7, pct: 10 },
-      ]
+      probs: [ { id: 8, pct: 100 } ]
     },
   ];
 
@@ -3284,13 +3231,15 @@
   const GAME_VAULT_V2      = '0x797A4bBd03aDE450c0384EaF94B948DeB697Cbd3';  // Vault dual (legacy, mantener)
   const SWAP_ROUTER_02     = '0x091AD9e2e6e5eD44c1c66dB50e49A601F9f36cF6';  // SwapRouter02 confirmado
   const UNIVERSAL_ROUTER   = '0x8ac7bee993bb44dab564ea4bc9ea67bf9eb5e743';
+  // ⚠️ ACTUALIZAR ESTE VALOR CON LA DIRECCIÓN DEL BullFarmSwapper TRAS DESPLEGAR
+  let   SWAPPER_CONTRACT   = '0x0000000000000000000000000000000000000000';  // Placeholder - reemplazar tras deploy
   const PERMIT2            = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const QUOTER_V2          = '0x10158D43e6cc414deE1Bd1eB0EfC6a5cBCfF244c';
 
   // ============= JUEGO ON-CHAIN — BullFarmGameV2 (Permit2 Edition) =============
   // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
   // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
-  const GAME_CONTRACT      = '0x6D039549d3C7872279F197Ed7060Df7593B4E4f1';
+  const GAME_CONTRACT      = '0xE45aaa5F023Fd571d2c5FDdeacd5805Fe06B3B75'; // BullFarmGameV3 - SIN AZAR, harvest on-chain, swap nativo
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
   const HARVEST_API        = BACKEND_URL + '/api/sign-harvest';
@@ -3465,14 +3414,23 @@
     const btn = document.getElementById('swap-main-btn');
     const txt = document.getElementById('swap-main-btn-text');
     if (!btn || !txt) return;
-    // Con Quick Action, el botón siempre está habilitado.
-    // El Swap nativo de World App valida saldos y liquidez por su cuenta.
-    btn.disabled = false;
     const amt = parseFloat(swapState.amountIn) || 0;
-    if (amt > 0) {
-      txt.textContent = `🌍 SWAP ${swapState.from} → ${swapState.to}`;
+    const bal = swapState.walletBalances[swapState.from] || 0;
+    if (!state.walletAddress) {
+      btn.disabled = true;
+      txt.textContent = currentLang === 'es' ? 'CONECTA WALLET' : 'CONNECT WALLET';
+    } else if (amt <= 0) {
+      btn.disabled = true;
+      txt.textContent = currentLang === 'es' ? 'INGRESA UN MONTO' : 'ENTER AN AMOUNT';
+    } else if (amt > bal) {
+      btn.disabled = true;
+      txt.textContent = currentLang === 'es' ? `SALDO ${swapState.from} INSUFICIENTE` : `INSUFFICIENT ${swapState.from}`;
+    } else if (swapState.amountOut <= 0) {
+      btn.disabled = true;
+      txt.textContent = currentLang === 'es' ? 'SIN LIQUIDEZ' : 'NO LIQUIDITY';
     } else {
-      txt.textContent = currentLang === 'es' ? '🌍 ABRIR SWAP EN WORLD APP' : '🌍 OPEN SWAP IN WORLD APP';
+      btn.disabled = false;
+      txt.textContent = `SWAP ${swapState.from} → ${swapState.to}`;
     }
   }
 
@@ -3502,56 +3460,103 @@
    * MiniKit empaqueta ambas en una sola firma del usuario.
    * Slippage: 1% fijo.
    */
-  // ============= SWAP NATIVO OFICIAL DE WORLDCOIN =============
-  // Usa el Swap Quick Action oficial de World App
-  // Docs: https://docs.world.org/mini-apps/sharing/swap-qa
-  // 
-  // Esto abre el SWAP NATIVO de World App con BFM y WLD preconfigurados.
-  // Es la solución oficial recomendada por Worldcoin.
+  // ============= SWAP NATIVO VIA BullFarmSwapper =============
+  // Usa nuestro contrato BullFarmSwapper que actúa como proxy:
+  // Usuario → Permit2.approve(Swapper) → Swapper.swap() → 
+  //   Swapper internamente: permit2.transferFrom + SwapRouter02.exactInputSingle
+  //   → BFM/WLD va directo al usuario
+  //
+  // Mismo patrón que las compras de sobres (que funcionan).
   async function executeSwap() {
     const mk = window._MiniKit || window.MiniKit;
     if (!mk || !(mk.isInstalled && mk.isInstalled())) {
       toast(currentLang === 'es' ? '⚠ Abre dentro de World App' : '⚠ Open inside World App');
       return;
     }
+    if (swapState.swapping) return;
+    if (!swapState.amountIn || swapState.amountIn <= 0) {
+      toast(currentLang === 'es' ? '⚠ Ingresa un monto' : '⚠ Enter an amount');
+      return;
+    }
+    swapState.swapping = true;
+
+    const btn = document.getElementById('swap-main-btn');
+    const txt = document.getElementById('swap-main-btn-text');
+    const status = document.getElementById('swap-tx-status');
+    btn.disabled = true;
+    txt.textContent = currentLang === 'es' ? '⏳ PROCESANDO...' : '⏳ PROCESSING...';
+    status.style.display = 'block';
+    status.textContent = currentLang === 'es' ? 'Preparando transacción...' : 'Preparing transaction...';
 
     try {
-      // App ID oficial del Swap de Worldcoin
-      const SWAP_APP_ID = 'app_6c5c5717c77abe83be8814c032c3a6f9';
-      const SOURCE_APP_ID = 'app_41af02a5659ff3d0e8206bc2dba546b1'; // BullFarm app_id
-      const SOURCE_APP_NAME = 'BullFarm';
+      await initPool();
+      const tokenIn = tokenAddr(swapState.from);
+      const amountInWei = ethers.parseUnits(String(swapState.amountIn), 18);
+      const amountOutMinFloat = swapState.amountOut * 0.97; // 3% slippage
+      const amountOutMinWei = ethers.parseUnits(amountOutMinFloat.toFixed(18), 18);
 
-      // Tomar tokens del swap actual (from/to)
-      const fromToken = tokenAddr(swapState.from);
-      const toToken = tokenAddr(swapState.to);
-      const amountStr = swapState.amountIn > 0 ? String(swapState.amountIn) : '';
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-      // Construir el path con parámetros (ejemplo oficial Worldcoin)
-      const params = new URLSearchParams({
-        fromToken: fromToken,
-        toToken: toToken,
-        sourceAppId: SOURCE_APP_ID,
-        sourceAppName: SOURCE_APP_NAME
-      });
+      // Paso 1: Permit2.approve(tokenIn, GAME_CONTRACT V3, amountIn, 0)
+      // V3 tiene swap integrado, no necesitamos contrato separado
+      const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [tokenIn, GAME_CONTRACT, amountInWei, 0]
+      ).slice(2);
 
-      // Si hay cantidad, agregarla
-      if (amountStr) {
-        // Convertir a wei (la API espera el valor en la unidad base)
-        const amountWei = ethers.parseUnits(amountStr, 18).toString();
-        params.set('amount', amountWei);
+      // Paso 2: Llamar a swapWLDtoBFM o swapBFMtoWLD del V3
+      let swapData;
+      if (swapState.from === 'WLD') {
+        const sel = ethers.id('swapWLDtoBFM(uint256,uint256)').slice(0,10);
+        swapData = sel + abiCoder.encode(
+          ['uint256','uint256'],
+          [amountInWei, amountOutMinWei]
+        ).slice(2);
+      } else {
+        const sel = ethers.id('swapBFMtoWLD(uint256,uint256)').slice(0,10);
+        swapData = sel + abiCoder.encode(
+          ['uint256','uint256'],
+          [amountInWei, amountOutMinWei]
+        ).slice(2);
       }
 
-      const fullPath = '/?' + params.toString();
-      const queryString = `https://worldcoin.org/mini-app?app_id=${SWAP_APP_ID}&path=${encodeURIComponent(fullPath)}`;
+      status.textContent = currentLang === 'es' ? 'Firma en tu wallet...' : 'Sign in your wallet...';
+      // Bundle: Permit2.approve + GAME_CONTRACT.swap (V3 maneja todo internamente)
+      const result = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [
+          { to: PERMIT2,        data: permit2ApproveData },
+          { to: GAME_CONTRACT,  data: swapData }
+        ]
+      });
+      const payload = result?.finalPayload || result?.data || result;
 
-      console.log('Opening Worldcoin Swap:', queryString);
-
-      // Abrir el link del Swap oficial dentro de World App
-      // Usar window.location para que abra en el mismo flujo de World App
-      window.location.href = queryString;
+      if (payload?.status === 'error' || payload?.error_code) {
+        const errMsg = (payload?.error_code || payload?.message || 'unknown').slice(0, 60);
+        status.textContent = (currentLang === 'es' ? '❌ Error: ' : '❌ Error: ') + errMsg;
+        toast(currentLang === 'es' ? '❌ Swap rechazado' : '❌ Swap rejected');
+      } else {
+        status.textContent = currentLang === 'es' ? '✅ ¡Swap completado!' : '✅ Swap completed!';
+        toast(currentLang === 'es' ? '🎉 ¡Swap exitoso!' : '🎉 Swap successful!');
+        const ai = document.getElementById('swap-amount-in');
+        const ao = document.getElementById('swap-amount-out');
+        const rd = document.getElementById('swap-rate-display');
+        if (ai) ai.value = '';
+        if (ao) ao.value = '';
+        if (rd) rd.textContent = '—';
+        swapState.amountIn = 0;
+        swapState.amountOut = 0;
+        setTimeout(refreshSwapBalances, 4000);
+      }
     } catch(e) {
-      console.error('executeSwap error:', e);
-      toast(currentLang === 'es' ? '❌ Error: ' + e.message : '❌ Error: ' + e.message);
+      const msg = (e.message || '').slice(0, 80);
+      status.textContent = (currentLang === 'es' ? '❌ Error: ' : '❌ Error: ') + msg;
+      console.log('executeSwap error:', e);
+    } finally {
+      swapState.swapping = false;
+      updateSwapButton();
+      setTimeout(() => { const s = document.getElementById('swap-tx-status'); if (s) s.style.display = 'none'; }, 8000);
     }
   }
 
@@ -3586,21 +3591,37 @@
   // ============= 🎮 BULLFARMGAME — Funciones on-chain del juego =============
   // ABI del contrato BullFarmGame desplegado (toros, cosechas, fusiones)
   const GAME_ABI = [
-    // V2 - Funciones Permit2 (Worldcoin standard) ⭐
-    'function buyPackWithPermit2BFM(uint8 packId, uint256 amount, uint8[] calldata rarities)',
-    'function buyPackWithPermit2WLD(uint8 packId, uint256 amount, uint8[] calldata rarities)',
-    'function fundPoolWithPermit2(uint256 amount)',
-    // V2 - Funciones generales
-    'function harvestSigned(uint256 amount, uint256 nonce, uint256 deadline, bytes calldata signature)',
+    // V3 - Compras SIN AZAR (1 toro garantizado)
+    'function buyBullBFM(uint8 rarity)',
+    'function buyBullWLD(uint8 rarity)',
+    // V3 - Sistema de hambre
+    'function buyFood(uint8 foodType, uint256 amount)',
+    'function feedBulls(uint8 rarity)',
+    'function getStomachStatus(address user, uint8 rarity) view returns (uint8 mealsLeft, uint8 capacity, bool isHungry)',
+    'function getAllStomachStatus(address user) view returns (uint8[10] mealsLeft, uint8[10] capacity, bool[10] hungry)',
+    'function getFoodType(uint8 rarity) pure returns (uint8)',
+    // V3 - Harvest ON-CHAIN (sin signer)
+    'function harvest() returns (uint256)',
+    'function calculateHarvest(address user) view returns (uint256)',
+    // V3 - Fusión
     'function fuseBulls(uint8 fromRarity)',
+    // V3 - Swap nativo
+    'function swapBFMtoWLD(uint256 amountIn, uint256 amountOutMin) returns (uint256)',
+    'function swapWLDtoBFM(uint256 amountIn, uint256 amountOutMin) returns (uint256)',
+    // V3 - Pool management
     'function fundPool(uint256 amount)',
-    'function emergencyHarvest()',
-    // V2 - View functions
-    'function getPlayerBulls(address player) view returns (uint256[10])',
-    'function getPlayerStats(address player) view returns (uint256 totalHarvested, uint256 totalSpent, uint256 packsOpened, uint256 fusionsDone, uint256 lastHarvestNonce)',
-    'function getPoolStats() view returns (uint256 totalInPool, uint256 totalHarvested, uint256 totalSpent)',
     'function totalBfmInPool() view returns (uint256)',
-    'function timeUntilEmergencyHarvest() view returns (uint256)'
+    // V3 - View
+    'function getPlayerBulls(address user) view returns (uint256[10])',
+    'function getPlayerFood(address user) view returns (uint256[4])',
+    'function getPlayerStats(address user) view returns (uint256 lastHarvest, uint256 totalHarvest, uint256 totalBoughtCount, uint256 pendingHarvest)',
+    // V3 - Constantes (públicas auto-getters)
+    'function BULL_PRICES_BFM(uint256) view returns (uint256)',
+    'function BULL_PRICES_WLD(uint256) view returns (uint256)',
+    'function DAILY_PRODUCTION(uint256) view returns (uint256)',
+    'function FOOD_PRICES(uint256) view returns (uint256)',
+    'function STOMACH_CAPACITY(uint256) view returns (uint8)',
+    'function FEED_INTERVAL() view returns (uint256)'
   ];
 
   // ============= PERMIT2 ABI (Allowance Transfer) =============
@@ -3716,6 +3737,9 @@
   //   3. World App auto-aprueba el token a Permit2 al inicio (no requiere approve clásico)
   //   4. El contrato usa permit2.transferFrom() para jalar el pago
   //
+  // ============= COMPRA DE TOROS V3 (SIN AZAR) =============
+  // En V3 cada compra te da 1 toro de la rareza exacta (sin probabilidades)
+  // packIdNum aquí ahora representa la RAREZA del toro (0-8)
   async function buyPackOnChain(packIdNum, payToken, amountReadable) {
     try {
       const mk = window.MiniKit;
@@ -3723,43 +3747,27 @@
       const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
-      // 1. Pedir rarezas al backend
-      const resp = await fetch(PACK_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packId: packIdNum })
-      });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error('Backend: ' + (err.error || resp.statusText || 'error'));
-      }
-      const respJson = await resp.json();
-      const rarities = respJson.rarities;
-      if (!rarities || !Array.isArray(rarities) || rarities.length === 0) {
-        throw new Error('Backend no devolvió rarezas válidas');
-      }
+      // V3: No hay backend de rarezas. La rareza ES el packIdNum.
+      const rarity = packIdNum; // 0-8
 
       const amountWei = ethers.parseEther(String(amountReadable));
       const tokenAddress = payToken === 'BFM' ? BFM_ADDR : WLD_ADDR;
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-      // 2a. Permit2.approve(token, spender, amount, expiration=0)
+      // 1. Permit2.approve(token, spender=GAME_CONTRACT, amount, expiration=0)
       const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
       const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
         ['address','address','uint160','uint48'],
         [tokenAddress, GAME_CONTRACT, amountWei, 0]
       ).slice(2);
 
-      // 2b. GAME_CONTRACT.buyPackWithPermit2BFM/WLD(packId, amount, rarities)
-      const fnName = payToken === 'BFM' ? 'buyPackWithPermit2BFM' : 'buyPackWithPermit2WLD';
-      const fnSig = fnName + '(uint8,uint256,uint8[])';
+      // 2. GAME_CONTRACT.buyBullBFM(rarity) o buyBullWLD(rarity)
+      const fnName = payToken === 'BFM' ? 'buyBullBFM' : 'buyBullWLD';
+      const fnSig = fnName + '(uint8)';
       const fnSel = ethers.id(fnSig).slice(0,10);
-      const fnData = fnSel + abiCoder.encode(
-        ['uint8','uint256','uint8[]'],
-        [packIdNum, amountWei, rarities]
-      ).slice(2);
+      const fnData = fnSel + abiCoder.encode(['uint8'], [rarity]).slice(2);
 
-      // 3. Bundle de 2 txs en una sola llamada (patrón oficial Worldcoin)
+      // 3. Bundle de 2 txs (patrón Permit2 oficial)
       const txResult = await mk.sendTransaction({
         chainId: 480,
         transactions: [
@@ -3772,9 +3780,10 @@
       if (payload?.status === 'error' || payload?.error_code) {
         throw new Error('Compra rechazada: ' + (payload?.error_code || 'unknown'));
       }
-      return { ok: true, rarities, txHash: payload?.transaction_id || payload?.tx_hash };
+      // V3: el toro generado es de la rareza exacta solicitada (sin azar)
+      return { ok: true, rarities: [rarity], txHash: payload?.transaction_id || payload?.tx_hash };
     } catch (e) {
-      console.error('buyPackOnChain error:', e);
+      console.error('buyBullOnChain error:', e);
       return { ok: false, error: e.message };
     }
   }
@@ -3788,49 +3797,26 @@
       const playerAddress = window.userWallet || state.walletAddress;
       if (!playerAddress) throw new Error('Wallet no conectada');
 
-      // 1. Calcular timestamp de última cosecha (de localStorage o 0)
-      const lastHarvest = parseInt(localStorage.getItem('bfm:lastHarvest:' + playerAddress) || '0');
-      const now = Math.floor(Date.now() / 1000);
-      const lastTs = lastHarvest > 0 ? lastHarvest : (now - 3600);
-
-      // 2. Pedir firma al backend (debe incluir nonce para V2)
-      const resp = await fetch(HARVEST_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player: playerAddress,
-          lastHarvestTimestamp: lastTs
-        })
-      });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error('Backend: ' + (err.error || 'error'));
-      }
-      const { amount, nonce, deadline, signature, amountReadable } = await resp.json();
-      if (!nonce) {
-        throw new Error('Backend debe devolver nonce para V2 - actualiza el backend');
-      }
-
-      // 3. Llamar al contrato V2: harvestSigned(amount, nonce, deadline, signature)
+      // V3: Harvest 100% on-chain. NO requiere backend, NO requiere firma.
+      // El contrato calcula automáticamente cuánto BFM puedes cosechar
+      // según tus toros, su producción diaria, y el tiempo desde tu último harvest.
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-      const fnSel = ethers.id('harvestSigned(uint256,uint256,uint256,bytes)').slice(0,10);
-      const fnData = fnSel + abiCoder.encode(
-        ['uint256','uint256','uint256','bytes'],
-        [amount, nonce, deadline, signature]
-      ).slice(2);
+      const fnSel = ethers.id('harvest()').slice(0,10);
+      // Sin parámetros - el contrato decide
 
       const txResult = await mk.sendTransaction({
         chainId: 480,
-        transactions: [{ to: GAME_CONTRACT, data: fnData }]
+        transactions: [{ to: GAME_CONTRACT, data: fnSel }]
       });
       const payload = txResult?.finalPayload || txResult?.data || txResult;
 
       if (payload?.status === 'error' || payload?.error_code) {
         throw new Error('Cosecha rechazada: ' + (payload?.error_code || 'unknown'));
       }
-      // Guardar timestamp de cosecha exitosa
+      // Guardar timestamp de cosecha exitosa para UI
+      const now = Math.floor(Date.now() / 1000);
       localStorage.setItem('bfm:lastHarvest:' + playerAddress, String(now));
-      return { ok: true, amount: amountReadable, txHash: payload?.transaction_id || payload?.tx_hash };
+      return { ok: true, txHash: payload?.transaction_id || payload?.tx_hash };
     } catch (e) {
       console.error('harvestOnChain error:', e);
       return { ok: false, error: e.message };
