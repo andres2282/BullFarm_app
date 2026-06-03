@@ -1801,18 +1801,23 @@
       <div class="leaderboard" id="leaderboard"></div>
     </div>
 
-    <!-- PVP -->
+    <!-- PVP - Redirige a la pestaña PVP en el menú inferior -->
     <div class="sub-content" id="sub-pvp">
       <div class="sec-header">
         <div class="sec-title">⚔️ <span data-i18n="pvp_arena">PVP ARENA</span></div>
         <div class="sec-subtitle" data-i18n="pvp_subtitle">Compite contra otros ganaderos</div>
       </div>
-      <div style="text-align:center;padding:40px 20px;background:var(--black-2);border:2px dashed var(--gold);border-radius:24px">
+      <div style="text-align:center;padding:30px 20px;background:linear-gradient(135deg,var(--red-dark),var(--black));border:3px solid var(--gold-bright);border-radius:24px;box-shadow:5px 5px 0 var(--black)">
         <div style="font-size:64px;margin-bottom:16px">⚔️</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold-bright);letter-spacing:3px;margin-bottom:8px" data-i18n="coming_soon">PRÓXIMAMENTE</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold-pale);line-height:1.6" data-i18n="pvp_desc">
-          Pelea con tus toros contra otros<br>jugadores y gana $BULL
+        <div style="font-family:Anton,sans-serif;font-size:24px;color:var(--gold-bright);letter-spacing:3px;margin-bottom:12px">¡PVP DISPONIBLE!</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--gold-pale);line-height:1.7;margin-bottom:18px">
+          Reta a otros jugadores 1v1<br>
+          Apuesta 50 BULL, gana 100 BULL +<br>
+          50% del pendiente del rival
         </div>
+        <button onclick="document.querySelector('.nav-btn[data-view=pvp]').click()" style="padding:14px 28px;background:var(--gold-bright);color:var(--black);border:3px solid var(--black);border-radius:14px;font-family:Anton,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:3px 3px 0 var(--red-dark)">
+          ⚔️ IR A LA ARENA
+        </button>
       </div>
     </div>
   </section>
@@ -2881,15 +2886,17 @@
       ).join('');
       // Moneda correcta del sobre (BULL o WLD)
       const currency = pack.currency || 'BFM';
+      // displayCurrency: lo que se muestra al usuario (BFM interno se renombra a BULL)
+      const displayCurrency = currency === 'BFM' ? 'BULL' : currency;
       card.innerHTML = `
-        <div class="pack-random-badge">1<br>TORO<br>RANDOM</div>
-        <div class="pack-brand">$${currency} ${pack.brand}</div>
+        <div class="pack-random-badge">1<br>TORO<br>GARANTIZADO</div>
+        <div class="pack-brand">$${displayCurrency} ${pack.brand}</div>
         <div class="pack-bull-img"><img src="${pack.image}" alt="${pack.name}" onerror="this.outerHTML='${pack.emoji}'" /></div>
         <div class="pack-name">${pack.name}</div>
         <div class="pack-probs">${probsHtml}</div>
         <div class="pack-prices">
           <span class="pack-price-old">${fmt(pack.priceOld)}</span>
-          <span class="pack-price-new">${fmt(pack.price)}<span class="pack-price-unit">${currency}</span></span>
+          <span class="pack-price-new">${fmt(pack.price)}<span class="pack-price-unit">${displayCurrency}</span></span>
         </div>
         <button class="pack-buy" data-pack="${pack.id}">
           ${t('open_pack')}
@@ -4712,7 +4719,7 @@
       const btp = new ethers.Contract(BFM_ADDR, ERC20_ABI, provider);
       const raw = await btp.balanceOf(state.walletAddress);
       const bal = Number(ethers.formatUnits(raw, 18));
-      el.textContent = fmt(Math.floor(bal)) + ' BFM';
+      el.textContent = fmt(Math.floor(bal)) + ' BULL';
     } catch(e) {
       console.log('balance error:', e.message);
       el.textContent = currentLang === 'es' ? 'error' : 'error';
@@ -4745,7 +4752,7 @@
 
       // 2. Si no hay suficiente allowance, hacer approve primero
       if (currentAllowance < amount) {
-        toast(currentLang === 'es' ? '⏳ Aprobando gasto de BFM...' : '⏳ Approving BFM spend...');
+        toast(currentLang === 'es' ? '⏳ Aprobando gasto de BULL...' : '⏳ Approving BULL spend...');
         // Approve infinito para no repetir cada compra
         const maxUint = ethers.MaxUint256;
         const approveData = btpContract.interface.encodeFunctionData('approve', [GAME_VAULT, maxUint]);
