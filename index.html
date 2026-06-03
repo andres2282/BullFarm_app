@@ -1682,6 +1682,51 @@
   </div>
 </div>
 
+<!-- ============ TUTORIAL OVERLAY (primera vez) ============ -->
+<div id="tutorial-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:radial-gradient(ellipse at top,rgba(255,215,0,0.20),transparent 55%),radial-gradient(ellipse at bottom,rgba(132,204,22,0.15),transparent 60%),linear-gradient(180deg,#1C1207 0%,#0F0A05 100%);padding:30px 20px;overflow-y:auto;text-align:center">
+  <div style="max-width:520px;margin:0 auto;padding-top:20px">
+    <!-- Título -->
+    <div style="font-family:Anton,sans-serif;font-size:clamp(28px,8vw,42px);color:var(--gold-bright);letter-spacing:3px;line-height:1.1;text-shadow:3px 3px 0 var(--black),6px 6px 0 var(--red-dark);margin-bottom:12px">
+      🎮 BIENVENIDO A<br>BULLFARM 🐂
+    </div>
+    <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;color:var(--gold-pale);margin-bottom:24px">
+      Compra toros, aliméntalos, gana BFM
+    </div>
+
+    <!-- ¿Qué puedes hacer? -->
+    <div style="background:rgba(0,0,0,0.6);border:3px solid var(--gold-bright);border-radius:24px;padding:20px 18px;margin-bottom:16px;text-align:left;box-shadow:6px 6px 0 var(--black)">
+      <div style="font-family:Anton,sans-serif;font-size:16px;color:var(--gold-bright);letter-spacing:2px;margin-bottom:14px;text-align:center">📌 ¿QUÉ PUEDES HACER AQUÍ?</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--white);line-height:2">
+        <div>🛒 <b style="color:var(--gold-bright)">Comprar toros</b> (Común → God)</div>
+        <div>🐂 <b style="color:var(--gold-bright)">Verlos en tu establo</b></div>
+        <div>🍽️ <b style="color:var(--gold-bright)">Alimentarlos</b> cada 12 horas</div>
+        <div>🌾 <b style="color:var(--gold-bright)">Cosechar BFM</b> acumulado</div>
+        <div>⚡ <b style="color:var(--gold-bright)">Fusionar</b> 5 toros → 1 mejor</div>
+        <div>💱 <b style="color:var(--gold-bright)">Swap</b> BFM ↔ WLD</div>
+      </div>
+    </div>
+
+    <!-- Importante -->
+    <div style="background:linear-gradient(135deg,var(--red-dark),var(--black));border:3px solid var(--red);border-radius:24px;padding:18px;margin-bottom:24px;text-align:left;box-shadow:6px 6px 0 var(--black)">
+      <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--red-bright);letter-spacing:2px;margin-bottom:10px;text-align:center">⚠️ IMPORTANTE</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--white);line-height:1.8">
+        • Si no alimentas, el toro <b style="color:var(--red-bright)">NO produce</b><br>
+        • Todos los datos están <b style="color:var(--gold-bright)">on-chain</b><br>
+        • Tu wallet = tu progreso permanente
+      </div>
+    </div>
+
+    <!-- Botón COMENZAR -->
+    <button id="tutorial-close-btn" style="background:var(--gold-bright);color:var(--black);border:3px solid var(--black);border-radius:20px;padding:16px 40px;font-family:Anton,sans-serif;font-size:20px;letter-spacing:4px;cursor:pointer;box-shadow:5px 5px 0 var(--red-dark);transition:transform 0.1s">
+      🚀 COMENZAR
+    </button>
+
+    <div style="margin-top:20px;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);opacity:0.7">
+      Este tutorial solo aparece la primera vez
+    </div>
+  </div>
+</div>
+
 <div id="app-wrapper" style="display:none">
 <div class="container">
 
@@ -1944,7 +1989,7 @@
 
     <div style="background:var(--black-2);border:2px solid var(--red-dark);border-radius:20px;padding:14px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold-pale);line-height:1.6;word-break:break-all">
       <b style="color:var(--gold-bright);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;display:block;margin-bottom:6px">📋 CONTRATO BFM</b>
-      0xa64bF359365C89CA4517381E1E74970d65c1B553
+      0x1B1F1F29B76d83B30CaAcb7326CD325A0Bb7E9f0
       <button id="copy-btp-contract" style="display:block;margin-top:8px;background:var(--gold-bright);color:var(--black);border:none;border-radius:10px;padding:6px 14px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer" data-i18n="copy_contract">📋 COPIAR CONTRATO</button>
     </div>
   </section>
@@ -2326,7 +2371,7 @@
   const TOROS = [
     { id: 0, name: 'Toro Común',     emoji: '🐂', image: img('toro_1_comun'),      rarity: 'Común',       color: 'r-comun',      income: 5,     desc: 'Fuerte y resistente, el más básico del establo.' },
     { id: 1, name: 'Toro Rural',     emoji: '🐃', image: img('toro_2_rural'),      rarity: 'Rural',       color: 'r-rural',      income: 35,    desc: 'Criado en campos abiertos, con más velocidad y energía.' },
-    { id: 2, name: 'Toro Bravo',     emoji: '🐂', image: IMG_BASE + 'toro_3_bravo..png', rarity: 'Bravo',       color: 'r-bravo',      income: 110,   desc: 'Temperamento agresivo y gran poder de ataque.' },
+    { id: 2, name: 'Toro Bravo',     emoji: '🐂', image: img('toro_3_bravo'), rarity: 'Bravo',       color: 'r-bravo',      income: 110,   desc: 'Temperamento agresivo y gran poder de ataque.' },
     { id: 3, name: 'Toro de Hierro', emoji: '🐃', image: img('toro_4_hierro'),     rarity: 'Hierro',      color: 'r-hierro',     income: 320,   desc: 'Piel dura como metal, difícil de derrotar.' },
     { id: 4, name: 'Toro Salvaje',   emoji: '🐂', image: img('toro_5_salvaje'),    rarity: 'Salvaje',     color: 'r-salvaje',    income: 850,   desc: 'Vive libre y posee fuerza impredecible.' },
     { id: 5, name: 'Toro Alfa',      emoji: '🐃', image: img('toro_6_alfa'),       rarity: 'Alfa',        color: 'r-alfa',       income: 2200,  desc: 'Lidera la manada y domina a los demás toros.' },
@@ -2337,15 +2382,13 @@
   ];
 
   // SOBRES con precios reales (BFM o WLD según el sobre)
-  // ⚠️ V3 SIN AZAR: Cada "pack" es realmente UN TORO de la rareza exacta.
-  // El nombre PACKS se mantiene por compatibilidad con el código UI, pero
-  // representa toros individuales que se compran directamente.
-  // probs ya no se usa para azar - solo informativo (siempre 100% rareza X)
+  // ⚠️ V4: 1 toro garantizado por compra (sin azar).
+  // Precios actualizados para token BULL (nueva economía).
   const PACKS = [
     {
       id: 'comun',  name: 'TORO COMÚN',  brand: 'BULL', emoji: '🐂', image: img('sobre_comun'),
       currency: 'BFM',
-      priceOld: 250,   price: 200,
+      priceOld: 75,   price: 50,
       borderColor: '#9aa0a6', glow: '#d4d4d4',
       bg1: '#1a1a1a', bg2: '#000',
       probs: [ { id: 0, pct: 100 } ]
@@ -2353,7 +2396,7 @@
     {
       id: 'rural', name: 'TORO RURAL', brand: 'BULL', emoji: '🐃', image: img('sobre_rural'),
       currency: 'BFM',
-      priceOld: 1500,   price: 1200,
+      priceOld: 400,   price: 300,
       borderColor: '#4ade80', glow: '#22c55e',
       bg1: '#0a2e0a', bg2: '#000',
       probs: [ { id: 1, pct: 100 } ]
@@ -2361,7 +2404,7 @@
     {
       id: 'bravo', name: 'TORO BRAVO', brand: 'BULL', emoji: '🐂', image: img('sobre_bravo'),
       currency: 'BFM',
-      priceOld: 4200,  price: 3500,
+      priceOld: 1300,  price: 1000,
       borderColor: '#fb923c', glow: '#f97316',
       bg1: '#2e1500', bg2: '#000',
       probs: [ { id: 2, pct: 100 } ]
@@ -2369,7 +2412,7 @@
     {
       id: 'epico', name: 'TORO ÉPICO', brand: 'BULL', emoji: '🐃', image: img('sobre_epico'),
       currency: 'BFM',
-      priceOld: 12000,  price: 9500,
+      priceOld: 4000,  price: 3000,
       borderColor: '#38bdf8', glow: '#0ea5e9',
       bg1: '#001a2e', bg2: '#000',
       probs: [ { id: 3, pct: 100 } ]
@@ -2608,51 +2651,128 @@
       `${state.owned.length} ${t('bulls')} · ${fedToros().length} ${t('producing_word')} · ${fmt(dailyRatePotential())} $BFM/${t('day').toLowerCase()}`;
   }
 
-  function renderEstablo() {
+  // ============= RENDER ESTABLO V3 (DATOS ON-CHAIN) =============
+  // Muestra los toros REALES del contrato V3 con su estado de hambre
+  async function renderEstablo() {
     const grid = document.getElementById('toros-grid');
-    grid.innerHTML = '';
-    if (!state.owned.length) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--dim);font-family:JetBrains Mono">Sin toros en el establo</div>';
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--gold-pale);font-family:JetBrains Mono">⏳ Cargando establo...</div>';
+
+    const playerAddress = window.userWallet || state.walletAddress;
+    if (!playerAddress) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--dim);font-family:JetBrains Mono">Conecta tu wallet</div>';
       return;
     }
-    for (let idx = 0; idx < state.owned.length; idx++) {
-      const myToro = state.owned[idx];
-      const toro = TOROS[myToro.id];
-      const remaining = Math.max(myToro.fedUntil - Date.now(), 0);
-      const pct = Math.min(remaining / (24 * 3600 * 1000) * 100, 100);
-      const fed = remaining > 0;
-      let energyClass = '';
-      if (pct < 25) energyClass = 'critical';
-      else if (pct < 50) energyClass = 'low';
-      const hrsLeft = Math.floor(remaining / 3600000);
-      const minsLeft = Math.floor((remaining % 3600000) / 60000);
 
-      const sameType = state.owned.filter(o => o.id === myToro.id);
-      const copyNum = sameType.indexOf(myToro) + 1;
-      const totalCopies = sameType.length;
-      const copyStamp = totalCopies > 1 ? `<div class="copy-stamp">#${copyNum}/${totalCopies}</div>` : '';
+    try {
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
 
-      const card = document.createElement('div');
-      card.className = 'toro-card' + (fed ? '' : ' energy-low');
-      card.style.setProperty('--rarity-color', `var(--${toro.color})`);
-      card.innerHTML = `
-        ${copyStamp}
-        <div class="toro-emoji"><img src="${toro.image}" alt="${toro.name}" onerror="this.outerHTML='${toro.emoji}'" /></div>
-        <div class="toro-name">${toro.name}</div>
-        <div class="rarity-tag" style="background:var(--${toro.color})">${toro.rarity}</div>
-        <div class="toro-rate">${fmt(toro.income)} BFM${t('day_short')}</div>
-        <div class="energy-label"><span>⚡ ${pct.toFixed(0)}%</span><b>${fed ? `${hrsLeft}h ${minsLeft}m` : t('hungry_short')}</b></div>
-        <div class="energy-bar"><div class="energy-fill ${energyClass}" style="width:${pct}%"></div></div>
-        <div class="feed-btns">
-          <button class="feed-btn" data-feed="${idx}" data-food="common" ${state.inventory.common < 1 ? 'disabled' : ''}>🌾</button>
-          <button class="feed-btn" data-feed="${idx}" data-food="premium" ${state.inventory.premium < 1 ? 'disabled' : ''}>⭐</button>
+      // Leer datos on-chain en paralelo
+      const [bulls, foodInv, stomachData] = await Promise.all([
+        game.getPlayerBulls(playerAddress),
+        game.getPlayerFood(playerAddress),
+        game.getAllStomachStatus(playerAddress)
+      ]);
+      // stomachData: [mealsLeft[10], capacity[10], hungry[10]]
+
+      grid.innerHTML = '';
+
+      // Cabecera con inventario de comida
+      const FOOD_NAMES = ['Común', 'Premium', 'Élite', 'Real'];
+      const FOOD_ICONS = ['🌾', '🌟', '✨', '👑'];
+      const FOOD_PRICES = [0.25, 1, 5, 25];
+
+      const foodHeader = document.createElement('div');
+      foodHeader.style.cssText = 'grid-column:1/-1;background:var(--black-2);border:2px solid var(--gold);border-radius:18px;padding:14px;margin-bottom:14px';
+      foodHeader.innerHTML = `
+        <div style="font-family:Anton,sans-serif;color:var(--gold-bright);font-size:14px;letter-spacing:2px;text-align:center;margin-bottom:10px">🍽️ MI COMIDA</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          ${[0,1,2,3].map(i => `
+            <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.5);border:1px solid var(--gold-pale);border-radius:12px">
+              <div style="font-size:20px">${FOOD_ICONS[i]}</div>
+              <div style="font-family:Anton,sans-serif;color:var(--gold-bright);font-size:12px">${FOOD_NAMES[i]}</div>
+              <div style="font-family:JetBrains Mono,monospace;color:var(--white);font-size:14px;margin-top:2px"><b>${Number(foodInv[i])}</b></div>
+              <div style="font-size:10px;color:var(--gold-pale);margin-top:2px">${FOOD_PRICES[i]} BFM</div>
+              <button class="buy-food-btn" data-food-type="${i}" data-qty="10" style="margin-top:4px;background:var(--gold-bright);color:var(--black);border:none;border-radius:8px;padding:4px 6px;font-family:Anton,sans-serif;font-size:10px;cursor:pointer;width:100%">+10</button>
+            </div>
+          `).join('')}
         </div>
       `;
-      grid.appendChild(card);
+      grid.appendChild(foodHeader);
+
+      // Mostrar toros por rareza con estado de hambre
+      let hasBulls = false;
+      for (let r = 0; r < 10; r++) {
+        const count = Number(bulls[r]);
+        if (count === 0) continue;
+        hasBulls = true;
+
+        const toro = TOROS[r];
+        if (!toro) continue;
+
+        const mealsLeft = Number(stomachData[0][r]);
+        const capacity = Number(stomachData[1][r]);
+        const isHungry = stomachData[2][r];
+        const pct = capacity > 0 ? (mealsLeft / capacity) * 100 : 0;
+
+        let energyClass = '';
+        if (pct === 0) energyClass = 'critical';
+        else if (pct < 50) energyClass = 'low';
+
+        const foodTypeForRarity = r <= 1 ? 0 : (r <= 4 ? 1 : (r <= 6 ? 2 : 3));
+        const foodAvailable = Number(foodInv[foodTypeForRarity]);
+        const canFeed = foodAvailable >= count && !isHungry === false ? true : (foodAvailable >= count);
+
+        const card = document.createElement('div');
+        card.className = 'toro-card' + (isHungry ? ' energy-low' : '');
+        card.style.setProperty('--rarity-color', `var(--${toro.color})`);
+        card.innerHTML = `
+          <div class="copy-stamp">x${count}</div>
+          <div class="toro-emoji"><img src="${toro.image}" alt="${toro.name}" onerror="this.outerHTML='${toro.emoji}'" /></div>
+          <div class="toro-name">${toro.name}</div>
+          <div class="rarity-tag" style="background:var(--${toro.color})">${toro.rarity}</div>
+          <div class="toro-rate">${fmt(toro.income * count)} BFM/${currentLang === 'es' ? 'día' : 'day'}</div>
+          <div class="energy-label">
+            <span>${isHungry ? '🔴 HAMBRIENTO' : '🟢 ALIMENTADO'}</span>
+            <b>${mealsLeft}/${capacity}</b>
+          </div>
+          <div class="energy-bar"><div class="energy-fill ${energyClass}" style="width:${pct}%"></div></div>
+          <button class="feed-btn-all" data-feed-rarity="${r}" ${canFeed ? '' : 'disabled'} style="margin-top:8px;width:100%;background:${canFeed ? 'var(--gold-bright)' : 'var(--dim)'};color:var(--black);border:none;border-radius:10px;padding:6px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:1px;cursor:${canFeed ? 'pointer' : 'not-allowed'}">
+            ${FOOD_ICONS[foodTypeForRarity]} ALIMENTAR (${count} ${FOOD_ICONS[foodTypeForRarity]})
+          </button>
+          <div style="font-size:9px;color:var(--gold-pale);text-align:center;margin-top:4px">
+            Necesita ${count} comida ${FOOD_NAMES[foodTypeForRarity]}
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+
+      if (!hasBulls) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:30px;color:var(--dim);font-family:JetBrains Mono';
+        empty.innerHTML = currentLang === 'es' ? 'Aún no tienes toros. Ve a la Tienda 🛒' : 'No bulls yet. Go to Shop 🛒';
+        grid.appendChild(empty);
+      }
+
+      // Listeners
+      grid.querySelectorAll('[data-feed-rarity]').forEach(b => {
+        b.addEventListener('click', () => {
+          const rarity = parseInt(b.dataset.feedRarity);
+          feedToro(rarity);
+        });
+      });
+      grid.querySelectorAll('.buy-food-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const foodType = parseInt(b.dataset.foodType);
+          const qty = parseInt(b.dataset.qty);
+          buyFood(foodType, qty);
+        });
+      });
+    } catch (e) {
+      console.error('renderEstablo error:', e);
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--red-bright);font-family:JetBrains Mono">Error: ${e.message.slice(0,80)}</div>`;
     }
-    grid.querySelectorAll('[data-feed]').forEach(b => {
-      b.addEventListener('click', () => feedToro(+b.dataset.feed, b.dataset.food));
-    });
   }
 
   function renderTienda() {
@@ -3056,32 +3176,101 @@
     toast(`⚡ Fusión exitosa: ${TOROS[fusion.to].name}`);
   }
 
-  // ============= ALIMENTOS =============
-  async function buyFood(type, qty) {
-    const f = FOOD[type];
-    const total = f.cost * qty;
-    if (state.balance < total) { toast('SIN FONDOS'); return; }
-    state.balance -= total;
-    state.totalSpent += total;
-    splitPayment(total);
-    state.inventory[type] += qty;
-    await saveState(); await saveGlobals();
-    renderAll();
-    toast(`+${qty} ${f.icon} ${f.name}`);
+  // ============= COMPRAR COMIDA V3 (ON-CHAIN con Permit2) =============
+  // foodType: 0=Común(2 BFM), 1=Premium(10 BFM), 2=Élite(50 BFM), 3=Real(100 BFM)
+  // qty: cantidad de unidades a comprar
+  async function buyFood(foodType, qty) {
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk || !(mk.isInstalled && mk.isInstalled())) {
+      toast(currentLang === 'es' ? '⚠ Abre dentro de World App' : '⚠ Open inside World App');
+      return;
+    }
+    const playerAddress = window.userWallet || state.walletAddress;
+    if (!playerAddress) { toast('Conecta wallet'); return; }
+
+    // Precios de comida en BFM
+    const FOOD_PRICES_BFM = [0.25, 1, 5, 25];
+    const totalCost = FOOD_PRICES_BFM[foodType] * qty;
+    const totalCostWei = ethers.parseEther(String(totalCost));
+
+    toast(currentLang === 'es' ? '⏳ Comprando comida...' : '⏳ Buying food...');
+
+    try {
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+      // 1. Permit2.approve(BFM, GAME_CONTRACT, totalCost, 0)
+      const permit2ApproveSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permit2ApproveData = permit2ApproveSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [BFM_ADDR, GAME_CONTRACT, totalCostWei, 0]
+      ).slice(2);
+
+      // 2. GAME_CONTRACT.buyFood(foodType, qty)
+      const fnSel = ethers.id('buyFood(uint8,uint256)').slice(0,10);
+      const fnData = fnSel + abiCoder.encode(
+        ['uint8','uint256'],
+        [foodType, qty]
+      ).slice(2);
+
+      const txResult = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [
+          { to: PERMIT2, data: permit2ApproveData },
+          { to: GAME_CONTRACT, data: fnData }
+        ]
+      });
+      const payload = txResult?.finalPayload || txResult?.data || txResult;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        toast(currentLang === 'es' ? '❌ ' + (payload?.error_code || 'Error') : '❌ ' + (payload?.error_code || 'Error'));
+        return;
+      }
+
+      const FOOD_NAMES = ['Común', 'Premium', 'Élite', 'Real'];
+      const FOOD_ICONS = ['🌾', '🌟', '✨', '👑'];
+      toast(`✅ +${qty} ${FOOD_ICONS[foodType]} ${FOOD_NAMES[foodType]}`);
+
+      // Refrescar UI después de 4 segundos (esperar tx confirmar)
+      setTimeout(() => { if (window.syncBullsFromChain) window.syncBullsFromChain(); }, 4000);
+    } catch (e) {
+      console.error('buyFood error:', e);
+      toast(currentLang === 'es' ? '❌ Error: ' + e.message.slice(0,40) : '❌ Error: ' + e.message.slice(0,40));
+    }
   }
 
-  async function feedToro(idx, foodType) {
-    if (state.inventory[foodType] < 1) return;
-    state.inventory[foodType]--;
-    const f = FOOD[foodType];
-    const toro = state.owned[idx];
-    const now = Date.now();
-    const currentRemaining = Math.max(toro.fedUntil - now, 0);
-    const addMs = f.feedHours * 3600 * 1000;
-    toro.fedUntil = now + Math.min(currentRemaining + addMs, 24 * 3600 * 1000);
-    await saveState();
-    renderAll();
-    toast(`${f.icon} ${TOROS[toro.id].name} alimentado`);
+  // ============= ALIMENTAR TOROS V3 (ON-CHAIN) =============
+  // Alimenta TODOS los toros de una rareza específica
+  async function feedToro(rarity) {
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk || !(mk.isInstalled && mk.isInstalled())) {
+      toast(currentLang === 'es' ? '⚠ Abre dentro de World App' : '⚠ Open inside World App');
+      return;
+    }
+
+    toast(currentLang === 'es' ? '⏳ Alimentando...' : '⏳ Feeding...');
+
+    try {
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const fnSel = ethers.id('feedBulls(uint8)').slice(0,10);
+      const fnData = fnSel + abiCoder.encode(['uint8'], [rarity]).slice(2);
+
+      const txResult = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [{ to: GAME_CONTRACT, data: fnData }]
+      });
+      const payload = txResult?.finalPayload || txResult?.data || txResult;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        toast(currentLang === 'es' ? '❌ ' + (payload?.error_code || 'Error') : '❌ ' + (payload?.error_code || 'Error'));
+        return;
+      }
+
+      toast(currentLang === 'es' ? '✅ ¡Toros alimentados!' : '✅ Bulls fed!');
+      setTimeout(() => { if (window.syncBullsFromChain) window.syncBullsFromChain(); }, 4000);
+    } catch (e) {
+      console.error('feedToro error:', e);
+      toast(currentLang === 'es' ? '❌ Error' : '❌ Error');
+    }
   }
 
   // ============= RANKING =============
@@ -3225,7 +3414,7 @@
   // ============= SWAP — Uniswap V3 SwapRouter02 oficial en World Chain =============
   // Tu pool BFM/WLD está en Uniswap V3 oficial, confirmado en el explorer.
   // Direcciones oficiales: https://docs.uniswap.org/contracts/v3/reference/deployments
-  const BFM_CONTRACT       = '0xa64bF359365C89CA4517381E1E74970d65c1B553';  // Token BullFarm
+  const BFM_CONTRACT       = '0x1B1F1F29B76d83B30CaAcb7326CD325A0Bb7E9f0';  // Token BullFarm
   const WLD_CONTRACT       = '0x2cFc85d8E48F8EAB294be644d9E25C3030863003';
   const BFM_WLD_POOL       = '0x37eC30147AE0a306d7ABC53325bD44BcE32C3ED4';  // Pool Uniswap V3
   const GAME_VAULT_V2      = '0x797A4bBd03aDE450c0384EaF94B948DeB697Cbd3';  // Vault dual (legacy, mantener)
@@ -3239,7 +3428,7 @@
   // ============= JUEGO ON-CHAIN — BullFarmGameV2 (Permit2 Edition) =============
   // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
   // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
-  const GAME_CONTRACT      = '0xE45aaa5F023Fd571d2c5FDdeacd5805Fe06B3B75'; // BullFarmGameV3 - SIN AZAR, harvest on-chain, swap nativo
+  const GAME_CONTRACT      = '0xF3d1cC540C196c49ADEe74EF7d34dd35fe08C8C8'; // BullFarmGameV4 - BULL token, PVP, EXP, hambre, swap
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
   const HARVEST_API        = BACKEND_URL + '/api/sign-harvest';
@@ -3584,7 +3773,7 @@
   }
 
   // ============= WORLD ID + BALANCE REAL =============
-  const BFM_ADDR = '0xa64bF359365C89CA4517381E1E74970d65c1B553';
+  const BFM_ADDR = '0x1B1F1F29B76d83B30CaAcb7326CD325A0Bb7E9f0';
   const WLD_ADDR = '0x2cFc85d8E48F8EAB294be644d9E25C3030863003';
   const GAME_VAULT = '0xEddcAdD6F35da8f60F8806Eb9f945F08ec6f648C'; // Contrato GameVault desplegado en World Chain
   const WORLD_RPC = 'https://worldchain-mainnet.g.alchemy.com/public';
@@ -3659,21 +3848,34 @@
     }
   }
 
-  // ============= LEER STATS DEL JUGADOR (on-chain) =============
+  // ============= LEER STATS DEL JUGADOR V3 (on-chain) =============
   async function fetchPlayerStatsOnChain(playerAddress) {
     try {
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
       const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
-      const [totalBulls, totalHarvested, nonce, lastEmergency] = await game.playerStats(playerAddress);
-      const poolBalance = await game.poolBalance();
-      const dailyProd = await game.getDailyProduction(playerAddress);
+      // V3: getPlayerStats devuelve (lastHarvest, totalHarvest, totalBoughtCount, pendingHarvest)
+      const stats = await game.getPlayerStats(playerAddress);
+      const poolBalance = await game.totalBfmInPool();
+      const bulls = await game.getPlayerBulls(playerAddress);
+
+      // Calcular producción diaria total sumando producción por rareza
+      // Producción diaria por rareza (en wei): [5, 35, 110, 320, 850, 2200, 5500, 13000, 30000, 70000] * 1e18
+      const dailyPerRarity = [5, 35, 110, 320, 850, 2200, 5500, 13000, 30000, 70000];
+      let totalDaily = 0;
+      let totalBulls = 0;
+      for (let i = 0; i < 10; i++) {
+        const count = Number(bulls[i]);
+        totalBulls += count;
+        totalDaily += count * dailyPerRarity[i];
+      }
+
       return {
-        totalBulls: Number(totalBulls),
-        totalHarvested: ethers.formatEther(totalHarvested),
-        nonce: Number(nonce),
-        lastEmergency: Number(lastEmergency),
+        totalBulls: totalBulls,
+        totalHarvested: ethers.formatEther(stats[1]),
+        lastHarvest: Number(stats[0]),
+        pendingHarvest: ethers.formatEther(stats[3]),
         poolBalance: ethers.formatEther(poolBalance),
-        dailyProduction: ethers.formatEther(dailyProd)
+        dailyProduction: String(totalDaily)
       };
     } catch (e) {
       console.error('fetchPlayerStatsOnChain error:', e);
@@ -3968,6 +4170,22 @@
     fetchWalletBalance();
     // 🔄 Sincronizar toros y stats desde el contrato (datos reales)
     syncBullsFromChain();
+
+    // 🎮 TUTORIAL - mostrar solo la primera vez para esta wallet
+    const tutorialKey = 'bullfarm:tutorial_seen:' + state.walletAddress;
+    if (!localStorage.getItem(tutorialKey)) {
+      const tutorial = document.getElementById('tutorial-overlay');
+      if (tutorial) {
+        tutorial.style.display = 'block';
+        const closeBtn = document.getElementById('tutorial-close-btn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            tutorial.style.display = 'none';
+            localStorage.setItem(tutorialKey, '1');
+          }, { once: true });
+        }
+      }
+    }
   }
 
   // ====== 🔄 SINCRONIZAR TOROS DESDE LA BLOCKCHAIN ======
