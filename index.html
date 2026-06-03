@@ -2006,6 +2006,19 @@
       <div class="sec-subtitle" data-i18n="invite_subtitle">Gana BULL por cada amigo que se registre</div>
     </div>
 
+    <!-- 📢 AVISO IMPORTANTE -->
+    <div style="background:linear-gradient(135deg,#facc15,#f59e0b);border:3px solid var(--black);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:4px 4px 0 var(--red-dark)">
+      <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--black);letter-spacing:2px;text-align:center;margin-bottom:8px">📢 ¿CÓMO INVITAR?</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--black);line-height:1.7;background:rgba(255,255,255,0.5);border-radius:10px;padding:10px">
+        <b>1.</b> Copia tu username (@usuario) abajo<br>
+        <b>2.</b> Compártelo por Telegram, X o WhatsApp<br>
+        <b>3.</b> Tu amigo abre BullFarm, va a "INVITAR"<br>
+        <b>4.</b> Pega TU username en "¿Te invitaron?"<br>
+        <b>5.</b> Tu amigo recibe <b>25 BULL</b> al instante<br>
+        <b>6.</b> Tú recibes <b>50 BULL</b> pendientes por reclamar
+      </div>
+    </div>
+
     <div class="invite-hero">
       <div class="invite-title" data-i18n="invite_hero_title">💸 GANA 50 BULL POR AMIGO</div>
       <div class="invite-subtitle" data-i18n="invite_hero_sub">— Tu amigo también gana 25 BULL de bienvenida —</div>
@@ -2022,8 +2035,8 @@
       </div>
 
       <div class="invite-code-box" id="invite-code-box" title="Tap para copiar">
-        <div class="invite-code-label" data-i18n="your_code">🎟️ TU WALLET (compártela)</div>
-        <div class="invite-code" id="invite-code" style="font-size:13px;word-break:break-all">CARGANDO...</div>
+        <div class="invite-code-label" data-i18n="your_code">🎟️ TU USERNAME (compártelo)</div>
+        <div class="invite-code" id="invite-code" style="font-size:15px;word-break:break-all">CARGANDO...</div>
         <div class="invite-tap" data-i18n="tap_to_copy">👆 TOCA PARA COPIAR</div>
       </div>
 
@@ -2036,13 +2049,17 @@
     </div>
 
     <div class="redeem-box">
-      <div class="redeem-title" data-i18n="have_code">🎁 ¿TIENES UN CÓDIGO?</div>
+      <div class="redeem-title" data-i18n="have_code">🎁 ¿TE INVITARON?</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-bright);margin-bottom:8px;text-align:center">
+        Pega el USERNAME (@usuario) o WALLET de quien te invitó:
+      </div>
       <div class="redeem-row">
-        <input type="text" class="redeem-input" id="redeem-input" data-i18n-placeholder="enter_code" placeholder="0x... wallet del invitador" maxlength="42">
+        <input type="text" class="redeem-input" id="redeem-input" data-i18n-placeholder="enter_code" placeholder="@usuario o 0xABC...123" maxlength="42">
         <button class="redeem-btn" id="redeem-btn" data-i18n="redeem">CANJEAR</button>
       </div>
       <div style="text-align:center;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-top:8px" data-i18n="redeem_note">
-        Pega la wallet de quien te invitó. Recibirás 25 BULL inmediatamente.
+        Acepta username (@usuario) o wallet 0x... completa.<br>
+        Recibirás 25 BULL inmediatamente.
       </div>
     </div>
 
@@ -3748,10 +3765,10 @@
 
   // ============= INVITACIONES =============
   function renderInvite() {
-    // V4: el "código" ahora es la WALLET del usuario.
-    // El usuario comparte su wallet, otros la pegan para canjear.
+    // Cumpliendo guideline Worldcoin: mostrar USERNAME, no wallet
     const playerAddr = window.userWallet || state.walletAddress || '';
-    document.getElementById('invite-code').textContent = playerAddr || 'Conecta tu wallet';
+    const display = state.username ? '@' + state.username : (playerAddr || 'Conecta tu wallet');
+    document.getElementById('invite-code').textContent = display;
     // Los stats se actualizan desde loadReferralInfo() al cargar la pestaña
     loadReferralInfo();
   }
@@ -3763,11 +3780,13 @@
 
   async function copyInviteCode() {
     const playerAddr = window.userWallet || state.walletAddress || '';
+    // Copiamos el username SI existe, sino la wallet
+    const toCopy = state.username ? '@' + state.username : playerAddr;
     try {
-      await navigator.clipboard.writeText(playerAddr);
-      toast(currentLang === 'es' ? '📋 ¡Wallet copiada!' : '📋 Wallet copied!');
+      await navigator.clipboard.writeText(toCopy);
+      toast(currentLang === 'es' ? '📋 ¡Copiado!' : '📋 Copied!');
     } catch(e) {
-      toast(playerAddr);
+      toast(toCopy);
     }
   }
 
@@ -3796,29 +3815,52 @@
   // Para simplificar y ser robustos, recomendamos al usuario compartir su WALLET completa.
   async function redeemCode() {
     const input = document.getElementById('redeem-input');
-    const code = input.value.trim();
-    if (!code) { toast(currentLang === 'es' ? 'Ingresa una wallet del invitador' : 'Enter inviter wallet'); return; }
+    let code = input.value.trim();
+    if (!code) { toast(currentLang === 'es' ? 'Ingresa username o wallet' : 'Enter username or wallet'); return; }
 
     const mk = window._MiniKit || window.MiniKit;
     if (!mk) { toast(currentLang === 'es' ? 'Abre dentro de World App' : 'Open in World App'); return; }
     const playerAddress = window.userWallet || state.walletAddress;
     if (!playerAddress) { toast('Conecta wallet'); return; }
 
-    // Debe ser una address válida 0x... de 42 chars
+    // Si empieza con @ es username, quitamos el @
+    if (code.startsWith('@')) code = code.slice(1);
+
+    let inviterAddress = code;
+
+    // Si NO es una wallet 0x..., intentamos resolver username → wallet
     if (!code.startsWith('0x') || code.length !== 42) {
-      toast(currentLang === 'es' ? 'Pega la WALLET completa del invitador (0x...)' : 'Paste inviter WALLET (0x...)');
-      return;
+      toast(currentLang === 'es' ? '⏳ Buscando usuario...' : '⏳ Looking up user...');
+      try {
+        if (mk.getUserByUsername) {
+          const user = await mk.getUserByUsername(code);
+          if (user && user.walletAddress) {
+            inviterAddress = user.walletAddress;
+          } else {
+            toast(currentLang === 'es' ? '❌ Usuario no encontrado' : '❌ User not found');
+            return;
+          }
+        } else {
+          toast(currentLang === 'es' ? '❌ Pega la wallet 0x... completa' : '❌ Paste 0x... wallet');
+          return;
+        }
+      } catch (e) {
+        console.error('getUserByUsername error:', e);
+        toast(currentLang === 'es' ? '❌ Usuario no encontrado' : '❌ User not found');
+        return;
+      }
     }
-    if (code.toLowerCase() === playerAddress.toLowerCase()) {
+
+    if (inviterAddress.toLowerCase() === playerAddress.toLowerCase()) {
       toast(currentLang === 'es' ? 'No puedes invitarte a ti mismo' : "Can't invite yourself");
       return;
     }
 
-    toast(currentLang === 'es' ? '⏳ Canjeando código...' : '⏳ Redeeming...');
+    toast(currentLang === 'es' ? '⏳ Canjeando...' : '⏳ Redeeming...');
     try {
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
       const fnSel = ethers.id('registerWithCode(address)').slice(0,10);
-      const fnData = fnSel + abiCoder.encode(['address'], [code]).slice(2);
+      const fnData = fnSel + abiCoder.encode(['address'], [inviterAddress]).slice(2);
 
       const result = await mk.sendTransaction({
         chainId: 480,
@@ -4750,11 +4792,43 @@
     state.verified = verified;
     saveState();
     updateVerifiedBadge();
-    const short = state.walletAddress.slice(0,6) + '...' + state.walletAddress.slice(-4);
-    document.getElementById('wb-addr').textContent = short;
+
+    // Cumpliendo guideline Worldcoin: mostrar USERNAME, no wallet address
+    // Intentamos obtener el username del MiniKit
+    const mk = window._MiniKit || window.MiniKit;
+    let displayName = '';
+    let topDisplay = '';
+
+    try {
+      // 1) MiniKit.user.username (después de walletAuth)
+      if (mk && mk.user && mk.user.username) {
+        displayName = mk.user.username;
+        topDisplay = '@' + mk.user.username;
+        state.username = mk.user.username;
+      }
+    } catch(e) { console.log('Username from MiniKit not ready:', e.message); }
+
+    // Si no tenemos username, intentar buscarlo con getUserByAddress
+    if (!displayName && mk && mk.getUserByAddress) {
+      mk.getUserByAddress(state.walletAddress).then(user => {
+        if (user && user.username) {
+          state.username = user.username;
+          document.getElementById('wallet-name').textContent = user.username;
+          document.getElementById('wb-addr').textContent = '@' + user.username;
+          const topAddr2 = document.getElementById('top-wallet-addr');
+          if (topAddr2) topAddr2.textContent = '@' + user.username;
+          saveState();
+        }
+      }).catch(e => console.log('getUserByAddress error:', e.message));
+    }
+
+    // Fallback temporal: mostrar wallet corta (se actualiza cuando llega username)
+    const fallback = state.walletAddress.slice(0,6) + '...' + state.walletAddress.slice(-4);
+    document.getElementById('wb-addr').textContent = displayName ? '@' + displayName : fallback;
     const topAddr = document.getElementById('top-wallet-addr');
-    if (topAddr) topAddr.textContent = short;
-    document.getElementById('wallet-name').textContent = state.walletAddress.slice(0,6);
+    if (topAddr) topAddr.textContent = displayName ? '@' + displayName : fallback;
+    document.getElementById('wallet-name').textContent = displayName || state.walletAddress.slice(0,6);
+
     fetchWalletBalance();
     // 🔄 Sincronizar toros y stats desde el contrato (datos reales)
     syncBullsFromChain();
