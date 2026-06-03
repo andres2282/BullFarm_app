@@ -2022,8 +2022,8 @@
       </div>
 
       <div class="invite-code-box" id="invite-code-box" title="Tap para copiar">
-        <div class="invite-code-label" data-i18n="your_code">🎟️ TU CÓDIGO DE INVITACIÓN</div>
-        <div class="invite-code" id="invite-code">CARGANDO...</div>
+        <div class="invite-code-label" data-i18n="your_code">🎟️ TU WALLET (compártela)</div>
+        <div class="invite-code" id="invite-code" style="font-size:13px;word-break:break-all">CARGANDO...</div>
         <div class="invite-tap" data-i18n="tap_to_copy">👆 TOCA PARA COPIAR</div>
       </div>
 
@@ -2038,11 +2038,11 @@
     <div class="redeem-box">
       <div class="redeem-title" data-i18n="have_code">🎁 ¿TIENES UN CÓDIGO?</div>
       <div class="redeem-row">
-        <input type="text" class="redeem-input" id="redeem-input" data-i18n-placeholder="enter_code" placeholder="Ingresa código..." maxlength="12">
+        <input type="text" class="redeem-input" id="redeem-input" data-i18n-placeholder="enter_code" placeholder="0x... wallet del invitador" maxlength="42">
         <button class="redeem-btn" id="redeem-btn" data-i18n="redeem">CANJEAR</button>
       </div>
       <div style="text-align:center;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-top:8px" data-i18n="redeem_note">
-        Solo puedes canjear UN código (al registrarte). Recibirás 25 BULL.
+        Pega la wallet de quien te invitó. Recibirás 25 BULL inmediatamente.
       </div>
     </div>
 
@@ -2327,7 +2327,7 @@
       tap_to_copy: '👆 TOCA PARA COPIAR',
       copy_link: 'Copiar link',
       have_code: '🎁 ¿TIENES UN CÓDIGO?',
-      enter_code: 'Ingresa código...',
+      enter_code: '0x... wallet del invitador',
       redeem: 'CANJEAR',
       redeem_note: 'Solo puedes canjear UN código (al registrarte). Recibirás 25 BULL.',
       friends_invited: 'AMIGOS INVITADOS',
@@ -2417,7 +2417,7 @@
       tap_to_copy: '👆 TAP TO COPY',
       copy_link: 'Copy link',
       have_code: '🎁 HAVE A CODE?',
-      enter_code: 'Enter code...',
+      enter_code: '0x... inviter wallet',
       redeem: 'REDEEM',
       redeem_note: 'You can only redeem ONE code (at signup). You\'ll get 25 BULL.',
       friends_invited: 'FRIENDS INVITED',
@@ -3313,10 +3313,12 @@
           if (count === 0) continue;
           hasAny = true;
           const exp = Number(exps[r]);
+          const toro = TOROS[r];
+          const toroImg = toro ? `<img src="${toro.image}" alt="${toro.name}" onerror="this.outerHTML='${RARITY_EMOJIS[r]}'" style="width:48px;height:48px;object-fit:contain" />` : RARITY_EMOJIS[r];
           bullsListEl.innerHTML += `
             <div style="background:rgba(0,0,0,0.5);border:2px solid var(--gold-pale);border-radius:12px;padding:8px;text-align:center">
-              <div style="font-size:24px">${RARITY_EMOJIS[r]}</div>
-              <div style="font-family:Anton,sans-serif;font-size:12px;color:var(--gold-bright);letter-spacing:1px">${RARITY_NAMES[r]}</div>
+              <div style="height:50px;display:flex;align-items:center;justify-content:center">${toroImg}</div>
+              <div style="font-family:Anton,sans-serif;font-size:12px;color:var(--gold-bright);letter-spacing:1px;margin-top:4px">${RARITY_NAMES[r]}</div>
               <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--white)">x${count}</div>
               <div style="font-family:Anton,sans-serif;font-size:13px;color:#facc15;margin-top:4px;background:rgba(252,211,77,0.1);border-radius:6px;padding:2px 4px">⚡ EXP ${exp.toLocaleString()}</div>
             </div>
@@ -3405,13 +3407,16 @@
       el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">No tienes retos pendientes 🎯</div>';
       return;
     }
-    el.innerHTML = challenges.map(ch => `
+    el.innerHTML = challenges.map(ch => {
+      const toro = TOROS[ch.cRarity];
+      const toroImg = toro ? `<img src="${toro.image}" alt="${toro.name}" onerror="this.outerHTML='${RARITY_EMOJIS[ch.cRarity]}'" style="width:32px;height:32px;object-fit:contain;vertical-align:middle" />` : RARITY_EMOJIS[ch.cRarity];
+      return `
       <div style="background:rgba(239,68,68,0.1);border:2px solid var(--red);border-radius:12px;padding:10px;margin-bottom:8px">
         <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-bottom:4px">
           De: ${ch.challenger.slice(0,6)}...${ch.challenger.slice(-4)}
         </div>
-        <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--gold-bright);margin-bottom:6px">
-          ⚔️ ${RARITY_EMOJIS[ch.cRarity]} ${RARITY_NAMES[ch.cRarity]} TE RETA
+        <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--gold-bright);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          ⚔️ ${toroImg} ${RARITY_NAMES[ch.cRarity]} TE RETA
         </div>
         <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--white);margin-bottom:8px">
           ⏰ ${ch.hoursLeft.toFixed(1)} hrs restantes
@@ -3423,7 +3428,7 @@
           ⚔️ ACEPTAR (50 BULL)
         </button>
       </div>
-    `).join('');
+    `;}).join('');
 
     // Llenar selects de rareza con los toros del jugador
     const playerAddr = window.userWallet || state.walletAddress;
@@ -3467,13 +3472,15 @@
       const status = ch.resolved ? (ch.winner.toLowerCase() === ch.challenger.toLowerCase() ? '🏆 GANASTE' : '💀 PERDISTE')
                                   : (ch.expired ? '⏰ EXPIRADO' : `⏳ ${ch.hoursLeft.toFixed(1)}h restantes`);
       const showDefault = !ch.resolved && ch.expired;
+      const toro = TOROS[ch.cRarity];
+      const toroImg = toro ? `<img src="${toro.image}" alt="${toro.name}" onerror="this.outerHTML='${RARITY_EMOJIS[ch.cRarity]}'" style="width:32px;height:32px;object-fit:contain;vertical-align:middle" />` : RARITY_EMOJIS[ch.cRarity];
       return `
         <div style="background:rgba(0,0,0,0.5);border:2px solid var(--gold-pale);border-radius:12px;padding:10px;margin-bottom:8px">
           <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-bottom:4px">
             Vs: ${ch.rival.slice(0,6)}...${ch.rival.slice(-4)}
           </div>
-          <div style="font-family:Anton,sans-serif;font-size:13px;color:var(--gold-bright);margin-bottom:4px">
-            ${RARITY_EMOJIS[ch.cRarity]} ${RARITY_NAMES[ch.cRarity]}
+          <div style="font-family:Anton,sans-serif;font-size:13px;color:var(--gold-bright);margin-bottom:4px;display:flex;align-items:center;gap:6px">
+            ${toroImg} ${RARITY_NAMES[ch.cRarity]}
           </div>
           <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--white);margin-bottom:6px">
             ${status}
@@ -3741,35 +3748,26 @@
 
   // ============= INVITACIONES =============
   function renderInvite() {
-    document.getElementById('invite-code').textContent = state.inviteCode || generateInviteCode();
-    document.getElementById('stat-friends').textContent = state.friends.length;
-    document.getElementById('stat-friends-earned').textContent = fmt(state.friendsEarned);
-
-    const list = document.getElementById('friends-list-content');
-    if (!state.friends.length) {
-      list.innerHTML = `<div style="text-align:center;padding:18px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">${t('no_friends_yet')}</div>`;
-    } else {
-      list.innerHTML = '';
-      state.friends.forEach(f => {
-        const row = document.createElement('div');
-        row.className = 'friend-row';
-        const date = new Date(f.date).toLocaleDateString(currentLang === 'es' ? 'es-ES' : 'en-US', { day:'2-digit', month:'short' });
-        row.innerHTML = `<span class="friend-name">🐂 ${escapeHtml(f.name)} · ${date}</span><span class="friend-earned">+50 BULL</span>`;
-        list.appendChild(row);
-      });
-    }
+    // V4: el "código" ahora es la WALLET del usuario.
+    // El usuario comparte su wallet, otros la pegan para canjear.
+    const playerAddr = window.userWallet || state.walletAddress || '';
+    document.getElementById('invite-code').textContent = playerAddr || 'Conecta tu wallet';
+    // Los stats se actualizan desde loadReferralInfo() al cargar la pestaña
+    loadReferralInfo();
   }
 
   function inviteLink() {
-    return `https://bulltoken.app/?ref=${state.inviteCode}`;
+    const playerAddr = window.userWallet || state.walletAddress || '';
+    return `https://world.org/mini-app?app_id=${WORLD_APP_ID || 'app_'}&ref=${playerAddr}`;
   }
 
   async function copyInviteCode() {
+    const playerAddr = window.userWallet || state.walletAddress || '';
     try {
-      await navigator.clipboard.writeText(state.inviteCode);
-      toast(currentLang === 'es' ? '📋 ¡Código copiado!' : '📋 Code copied!');
+      await navigator.clipboard.writeText(playerAddr);
+      toast(currentLang === 'es' ? '📋 ¡Wallet copiada!' : '📋 Wallet copied!');
     } catch(e) {
-      toast(state.inviteCode);
+      toast(playerAddr);
     }
   }
 
@@ -3792,39 +3790,134 @@
     } catch(e) { toast(inviteLink()); }
   }
 
+  // V4: Canjeo de invitación ON-CHAIN
+  // El input ahora acepta una WALLET (0x...) o un código (BULLxxxx).
+  // Si es código, lo convertimos buscando la wallet correspondiente.
+  // Para simplificar y ser robustos, recomendamos al usuario compartir su WALLET completa.
   async function redeemCode() {
     const input = document.getElementById('redeem-input');
-    const code = input.value.trim().toUpperCase();
-    if (!code) { toast(currentLang === 'es' ? 'Ingresa un código' : 'Enter a code'); return; }
-    if (state.redeemedCode) {
-      toast(currentLang === 'es' ? 'Ya canjeaste un código' : 'You already redeemed a code');
+    const code = input.value.trim();
+    if (!code) { toast(currentLang === 'es' ? 'Ingresa una wallet del invitador' : 'Enter inviter wallet'); return; }
+
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk) { toast(currentLang === 'es' ? 'Abre dentro de World App' : 'Open in World App'); return; }
+    const playerAddress = window.userWallet || state.walletAddress;
+    if (!playerAddress) { toast('Conecta wallet'); return; }
+
+    // Debe ser una address válida 0x... de 42 chars
+    if (!code.startsWith('0x') || code.length !== 42) {
+      toast(currentLang === 'es' ? 'Pega la WALLET completa del invitador (0x...)' : 'Paste inviter WALLET (0x...)');
       return;
     }
-    if (code === state.inviteCode) {
-      toast(currentLang === 'es' ? 'No puedes usar tu propio código' : "Can't use your own code");
+    if (code.toLowerCase() === playerAddress.toLowerCase()) {
+      toast(currentLang === 'es' ? 'No puedes invitarte a ti mismo' : "Can't invite yourself");
       return;
     }
-    // Validar formato (acepta BULL nuevos y BFM legacy)
-    if (!/^(BULL[A-Z2-9]{4}|BFM[A-Z2-9]{5})$/.test(code)) {
-      toast(currentLang === 'es' ? 'Código inválido' : 'Invalid code');
-      return;
-    }
-    // Acreditar al invitado (25 BULL) y registrar al invitador globalmente
-    state.redeemedCode = true;
-    state.balance += 25;
-    state.totalEarned += 25;
-    // Registrar para que el invitador reciba sus 50 BULL (vía storage compartido)
+
+    toast(currentLang === 'es' ? '⏳ Canjeando código...' : '⏳ Redeeming...');
     try {
-      const refKey = 'ref:' + code;
-      const existing = await Store.get(refKey, true).catch(() => null);
-      const refData = existing ? JSON.parse(existing.value) : { code, invitees: [] };
-      refData.invitees.push({ name: state.playerName, date: Date.now() });
-      await Store.set(refKey, JSON.stringify(refData), true);
-    } catch(e) {}
-    input.value = '';
-    await saveState();
-    renderAll();
-    toast(currentLang === 'es' ? '🎉 ¡+25 BULL de bienvenida!' : '🎉 +25 BULL welcome bonus!');
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const fnSel = ethers.id('registerWithCode(address)').slice(0,10);
+      const fnData = fnSel + abiCoder.encode(['address'], [code]).slice(2);
+
+      const result = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [{ to: REFERRALS_CONTRACT, data: fnData }]
+      });
+      const payload = result?.finalPayload || result?.data || result;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        toast(currentLang === 'es' ? '❌ ' + (payload?.error_code || 'Error') : '❌ ' + (payload?.error_code || 'Error'));
+        return;
+      }
+
+      input.value = '';
+      toast(currentLang === 'es' ? '🎉 ¡+25 BULL de bienvenida!' : '🎉 +25 BULL welcome bonus!');
+      setTimeout(loadReferralInfo, 4000);
+    } catch (e) {
+      console.error('redeemCode error:', e);
+      toast(currentLang === 'es' ? '❌ Error: ' + e.message.slice(0,40) : '❌ Error');
+    }
+  }
+
+  // Cargar info de referidos ON-CHAIN
+  async function loadReferralInfo() {
+    const playerAddress = window.userWallet || state.walletAddress;
+    if (!playerAddress) return;
+    try {
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const ref = new ethers.Contract(REFERRALS_CONTRACT, REFERRALS_ABI, provider);
+      const [info, code] = await Promise.all([
+        ref.getReferralInfo(playerAddress),
+        ref.getMyCode(playerAddress)
+      ]);
+
+      const invitedCount = Number(info[0]);
+      const pending = ethers.formatUnits(info[1], 18);
+      const totalClaimed = ethers.formatUnits(info[2], 18);
+
+      // Actualizar UI
+      const codeEl = document.getElementById('invite-code');
+      if (codeEl) codeEl.textContent = code;
+
+      const statFriendsEl = document.getElementById('stat-friends');
+      if (statFriendsEl) statFriendsEl.textContent = invitedCount;
+
+      const statEarnedEl = document.getElementById('stat-friends-earned');
+      if (statEarnedEl) statEarnedEl.textContent = Number(totalClaimed).toFixed(0);
+
+      // Mostrar botón RECLAMAR si tiene pendientes
+      const pendingNum = Number(pending);
+      let claimBox = document.getElementById('claim-rewards-box');
+      if (!claimBox) {
+        claimBox = document.createElement('div');
+        claimBox.id = 'claim-rewards-box';
+        claimBox.style.cssText = 'background:linear-gradient(135deg,var(--gold),var(--red-dark));border:3px solid var(--gold-bright);border-radius:18px;padding:14px;margin:14px 0;text-align:center;box-shadow:4px 4px 0 var(--black)';
+        const friendsList = document.querySelector('.friends-list');
+        if (friendsList) friendsList.parentNode.insertBefore(claimBox, friendsList);
+      }
+      if (pendingNum > 0) {
+        claimBox.innerHTML = `
+          <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--black);letter-spacing:2px;margin-bottom:6px">🎁 BULL PENDIENTES POR RECLAMAR</div>
+          <div style="font-family:Anton,sans-serif;font-size:32px;color:var(--white);text-shadow:2px 2px 0 var(--black);margin-bottom:10px">${pendingNum.toFixed(0)} BULL</div>
+          <button id="claim-referral-btn" style="width:100%;padding:14px;background:var(--black);color:var(--gold-bright);border:3px solid var(--gold-bright);border-radius:12px;font-family:Anton,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:3px 3px 0 var(--red-dark)">🤑 RECLAMAR ${pendingNum.toFixed(0)} BULL</button>
+        `;
+        claimBox.style.display = 'block';
+        const claimBtn = document.getElementById('claim-referral-btn');
+        if (claimBtn) claimBtn.addEventListener('click', claimReferralRewards, { once: true });
+      } else {
+        claimBox.style.display = 'none';
+      }
+    } catch (e) {
+      console.error('loadReferralInfo error:', e);
+    }
+  }
+
+  // Reclamar las recompensas de referidos
+  async function claimReferralRewards() {
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk) { toast(currentLang === 'es' ? 'Abre dentro de World App' : 'Open in World App'); return; }
+
+    toast(currentLang === 'es' ? '⏳ Reclamando BULL...' : '⏳ Claiming...');
+    try {
+      const fnSel = ethers.id('claimReferralRewards()').slice(0,10);
+      const result = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [{ to: REFERRALS_CONTRACT, data: fnSel }]
+      });
+      const payload = result?.finalPayload || result?.data || result;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        toast(currentLang === 'es' ? '❌ ' + (payload?.error_code || 'Error') : '❌ ' + (payload?.error_code || 'Error'));
+        return;
+      }
+
+      toast(currentLang === 'es' ? '🎉 ¡BULL recibidos!' : '🎉 BULL received!');
+      setTimeout(loadReferralInfo, 4000);
+    } catch (e) {
+      console.error('claimReferralRewards error:', e);
+      toast(currentLang === 'es' ? '❌ Error' : '❌ Error');
+    }
   }
 
   // Revisar si alguien usó mi código (cobrar 50 BULL por cada nuevo invitado)
@@ -3873,6 +3966,7 @@
   // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
   // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
   const GAME_CONTRACT      = '0xF3d1cC540C196c49ADEe74EF7d34dd35fe08C8C8'; // BullFarmGameV4 - BULL token, PVP, EXP, hambre, swap
+  const REFERRALS_CONTRACT = '0x85dc36E4Cb98E04cE88d8CFfdf70594CdD75A069'; // BullFarmReferrals - sistema de invitaciones on-chain
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
   const HARVEST_API        = BACKEND_URL + '/api/sign-harvest';
@@ -4261,6 +4355,21 @@
 
   // ============= 🎮 BULLFARMGAME — Funciones on-chain del juego =============
   // ABI del contrato BullFarmGame desplegado (toros, cosechas, fusiones)
+  const REFERRALS_ABI = [
+    'function getMyCode(address user) pure returns (string)',
+    'function registerWithCode(address inviter)',
+    'function claimReferralRewards() returns (uint256 amount)',
+    'function hasRedeemed(address) view returns (bool)',
+    'function pendingRewards(address) view returns (uint256)',
+    'function totalInvitedCount(address) view returns (uint256)',
+    'function totalClaimed(address) view returns (uint256)',
+    'function invitedBy(address) view returns (address)',
+    'function getReferralInfo(address user) view returns (uint256 invitedCount, uint256 pending, uint256 totalClaimedSoFar, bool userHasRedeemed, address userInvitedBy)',
+    'function totalBullInPool() view returns (uint256)',
+    'function INVITEE_REWARD() view returns (uint256)',
+    'function INVITER_REWARD() view returns (uint256)'
+  ];
+
   const GAME_ABI = [
     // V3 - Compras SIN AZAR (1 toro garantizado)
     'function buyBullBFM(uint8 rarity)',
