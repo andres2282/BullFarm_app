@@ -2142,17 +2142,26 @@
     <div style="background:linear-gradient(135deg,var(--black-2),var(--red-dark));border:3px solid var(--gold-bright);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:4px 4px 0 var(--black)">
       <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--gold-bright);letter-spacing:2px;margin-bottom:10px;text-align:center">⚔️ CREAR RETO</div>
       <div style="margin-bottom:10px">
-        <label style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);display:block;margin-bottom:4px">Tu rareza de toro:</label>
+        <label style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);display:block;margin-bottom:4px">Tu toro:</label>
         <select id="pvp-my-rarity" style="width:100%;padding:10px;background:var(--black);color:var(--gold-bright);border:2px solid var(--gold);border-radius:10px;font-family:JetBrains Mono,monospace;font-size:13px">
           <option value="">-- Selecciona toro --</option>
         </select>
       </div>
-      <div style="margin-bottom:10px">
-        <label style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);display:block;margin-bottom:4px">Wallet del rival:</label>
-        <input type="text" id="pvp-rival-address" placeholder="0x..." style="width:100%;padding:10px;background:var(--black);color:var(--white);border:2px solid var(--gold);border-radius:10px;font-family:JetBrains Mono,monospace;font-size:11px;box-sizing:border-box" />
-      </div>
-      <button id="pvp-create-btn" style="width:100%;padding:14px;background:var(--gold-bright);color:var(--black);border:3px solid var(--black);border-radius:12px;font-family:Anton,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:3px 3px 0 var(--red-dark)">⚔️ RETAR (50 BULL)</button>
       <div id="pvp-create-status" style="text-align:center;margin-top:8px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);min-height:14px"></div>
+    </div>
+
+    <!-- 🔍 BUSCAR RIVAL - lista de jugadores activos -->
+    <div style="background:var(--black-2);border:3px solid var(--gold-bright);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:4px 4px 0 var(--black)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-family:Anton,sans-serif;font-size:14px;color:var(--gold-bright);letter-spacing:2px">🔍 JUGADORES ACTIVOS</div>
+        <button id="pvp-search-btn" style="background:var(--gold-bright);color:var(--black);border:2px solid var(--black);border-radius:10px;padding:6px 12px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer">🔄 BUSCAR</button>
+      </div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-bottom:10px">
+        Toca un jugador para retarlo (50 BULL)
+      </div>
+      <div id="pvp-players-list" style="max-height:400px;overflow-y:auto">
+        <div style="text-align:center;padding:20px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">Toca BUSCAR para cargar jugadores</div>
+      </div>
     </div>
 
     <!-- Retos pendientes (entrantes) -->
@@ -2171,7 +2180,7 @@
       </div>
     </div>
 
-    <button id="pvp-refresh-btn" style="width:100%;padding:12px;background:transparent;color:var(--gold-bright);border:2px dashed var(--gold);border-radius:10px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer">🔄 ACTUALIZAR</button>
+    <button id="pvp-refresh-btn" style="width:100%;padding:12px;background:transparent;color:var(--gold-bright);border:2px dashed var(--gold);border-radius:10px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer">🔄 ACTUALIZAR RETOS</button>
   </section>
 
   <!-- ===== FIN VIEW PVP ===== -->
@@ -3300,6 +3309,98 @@
   const RARITY_NAMES = ['Común', 'Rural', 'Bravo', 'Épico', 'Alfa', 'Legend', 'Divino', 'Supremo', 'God', 'Titán'];
   const RARITY_EMOJIS = ['🐂', '🐃', '🐂', '🐃', '🐂', '🐃', '🐂', '🐃', '👑🐂', '⚡🐂'];
 
+  // ============= BUSCAR JUGADORES ACTIVOS =============
+  // Lee eventos BullBought del V4 para obtener wallets que han comprado toros
+  async function searchActivePlayers() {
+    const listEl = document.getElementById('pvp-players-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gold-bright);font-family:JetBrains Mono;font-size:11px">⏳ Buscando jugadores activos...</div>';
+
+    const myAddress = (window.userWallet || state.walletAddress || '').toLowerCase();
+
+    try {
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+
+      // Buscar eventos BullBought de los últimos 200,000 bloques (~5 días en World Chain)
+      const latestBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, latestBlock - 200000);
+
+      // Event signature: BullBought(address indexed user, uint8 rarity, uint256 cost, bool paidInWLD)
+      const eventTopic = ethers.id('BullBought(address,uint8,uint256,bool)');
+
+      const logs = await provider.getLogs({
+        address: GAME_CONTRACT,
+        topics: [eventTopic],
+        fromBlock: fromBlock,
+        toBlock: 'latest'
+      });
+
+      // Extraer wallets únicas (sin la del usuario actual)
+      const playersSet = new Set();
+      // Procesamos del más reciente al más antiguo
+      for (let i = logs.length - 1; i >= 0; i--) {
+        const log = logs[i];
+        // El user está en topics[1] (primer parámetro indexed)
+        if (log.topics.length < 2) continue;
+        const userAddr = '0x' + log.topics[1].slice(26); // Quitar padding (24 chars de ceros)
+        if (userAddr.toLowerCase() === myAddress) continue;
+        playersSet.add(userAddr.toLowerCase());
+        if (playersSet.size >= 20) break; // Máximo 20
+      }
+
+      const players = Array.from(playersSet);
+
+      if (players.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">No hay otros jugadores activos aún. ¡Sé el primero!</div>';
+        return;
+      }
+
+      // Para cada jugador, intentar obtener su username con MiniKit
+      listEl.innerHTML = `<div style="text-align:center;padding:10px;color:var(--gold-pale);font-family:JetBrains Mono;font-size:10px">📋 ${players.length} jugadores activos encontrados</div>`;
+
+      const mk = window._MiniKit || window.MiniKit;
+      for (const playerAddr of players) {
+        let displayName = playerAddr.slice(0, 6) + '...' + playerAddr.slice(-4);
+
+        // Intentar obtener username (asíncrono, sin bloquear)
+        if (mk && mk.getUserByAddress) {
+          mk.getUserByAddress(playerAddr).then(user => {
+            if (user && user.username) {
+              const playerCard = document.querySelector(`[data-player-addr="${playerAddr}"]`);
+              if (playerCard) {
+                const nameEl = playerCard.querySelector('.player-name');
+                if (nameEl) nameEl.textContent = '@' + user.username;
+              }
+            }
+          }).catch(() => {});
+        }
+
+        // Card con datos básicos
+        const card = document.createElement('div');
+        card.setAttribute('data-player-addr', playerAddr);
+        card.style.cssText = 'background:rgba(0,0,0,0.5);border:2px solid var(--gold-pale);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px';
+        card.innerHTML = `
+          <div style="flex:1;min-width:0">
+            <div class="player-name" style="font-family:Anton,sans-serif;font-size:14px;color:var(--gold-bright);letter-spacing:1px;overflow:hidden;text-overflow:ellipsis">${displayName}</div>
+          </div>
+          <button class="pvp-challenge-player-btn" data-rival="${playerAddr}" style="background:var(--gold-bright);color:var(--black);border:2px solid var(--black);border-radius:10px;padding:8px 14px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;white-space:nowrap">⚔️ RETAR</button>
+        `;
+        listEl.appendChild(card);
+      }
+
+      // Listeners
+      listEl.querySelectorAll('.pvp-challenge-player-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rival = btn.dataset.rival;
+          createPVPChallenge(rival);
+        });
+      });
+    } catch (e) {
+      console.error('searchActivePlayers error:', e);
+      listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red-bright);font-family:JetBrains Mono;font-size:11px">Error: ${e.message.slice(0,80)}</div>`;
+    }
+  }
+
   async function loadPVPData() {
     const playerAddress = window.userWallet || state.walletAddress;
     if (!playerAddress) return;
@@ -3512,16 +3613,19 @@
     });
   }
 
-  async function createPVPChallenge() {
+  async function createPVPChallenge(rivalAddress) {
     const mk = window._MiniKit || window.MiniKit;
     if (!mk) { toast('Abre dentro de World App'); return; }
 
     const rarity = parseInt(document.getElementById('pvp-my-rarity').value);
-    const rival = document.getElementById('pvp-rival-address').value.trim();
     const statusEl = document.getElementById('pvp-create-status');
 
-    if (isNaN(rarity)) { statusEl.textContent = '❌ Selecciona tu toro'; return; }
-    if (!rival || !rival.startsWith('0x') || rival.length !== 42) {
+    if (isNaN(rarity)) {
+      statusEl.textContent = '❌ Selecciona tu toro primero';
+      toast('❌ Selecciona tu toro primero (arriba)');
+      return;
+    }
+    if (!rivalAddress || !rivalAddress.startsWith('0x') || rivalAddress.length !== 42) {
       statusEl.textContent = '❌ Wallet inválida';
       return;
     }
@@ -3532,18 +3636,16 @@
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
       const PVP_ENTRY = ethers.parseEther('50');
 
-      // 1. Permit2.approve(BULL, V4, 50 BULL)
       const permitSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
       const permitData = permitSel + abiCoder.encode(
         ['address','address','uint160','uint48'],
         [BFM_ADDR, GAME_CONTRACT, PVP_ENTRY, 0]
       ).slice(2);
 
-      // 2. V4.createChallenge(myRarity, rival)
       const createSel = ethers.id('createChallenge(uint8,address)').slice(0,10);
       const createData = createSel + abiCoder.encode(
         ['uint8','address'],
-        [rarity, rival]
+        [rarity, rivalAddress]
       ).slice(2);
 
       const result = await mk.sendTransaction({
@@ -3561,8 +3663,7 @@
       }
 
       statusEl.textContent = '✅ ¡Reto enviado!';
-      toast('⚔️ Reto enviado a ' + rival.slice(0,6) + '...');
-      document.getElementById('pvp-rival-address').value = '';
+      toast('⚔️ Reto enviado a ' + rivalAddress.slice(0,6) + '...');
       setTimeout(loadPVPData, 4000);
     } catch (e) {
       console.error('createPVP error:', e);
@@ -4984,7 +5085,7 @@
       if (btn.dataset.view === 'tienda') renderTienda();
       if (btn.dataset.view === 'establo') renderEstablo();
       if (btn.dataset.view === 'fusion') renderFusion();
-      if (btn.dataset.view === 'pvp') loadPVPData();
+      if (btn.dataset.view === 'pvp') { loadPVPData(); searchActivePlayers(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
@@ -5026,7 +5127,7 @@
   safeListen('share-whatsapp', 'click', () => shareVia('whatsapp'));
   safeListen('share-telegram', 'click', () => shareVia('telegram'));
   // PVP listeners
-  safeListen('pvp-create-btn', 'click', createPVPChallenge);
+  safeListen('pvp-search-btn', 'click', searchActivePlayers);
   safeListen('pvp-refresh-btn', 'click', loadPVPData);
   safeListen('share-twitter', 'click', () => shareVia('twitter'));
   safeListen('share-copy', 'click', () => shareVia('copy'));
