@@ -3958,7 +3958,8 @@
 
   function inviteLink() {
     const playerAddr = window.userWallet || state.walletAddress || '';
-    return `https://world.org/mini-app?app_id=${WORLD_APP_ID || 'app_'}&ref=${playerAddr}`;
+    // APP_ID real de BullFarm en Worldcoin
+    return `https://world.org/mini-app?app_id=app_41af02a5659ff3d0e8206bc2dba546b1&ref=${playerAddr}`;
   }
 
   async function copyInviteCode() {
