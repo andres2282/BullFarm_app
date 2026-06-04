@@ -1794,11 +1794,11 @@
         <div class="sec-title">🏆 <span data-i18n="global_rank">RANKING GLOBAL</span></div>
         <div class="sec-subtitle" data-i18n="rank_subtitle">Los mejores ganaderos del protocolo</div>
       </div>
-      <div class="ranking-controls">
-        <input type="text" class="name-input" id="player-name" data-i18n-placeholder="your_name" placeholder="Tu nombre..." maxlength="20">
-        <button class="save-btn" id="save-score" data-i18n="publish">PUBLICAR</button>
+      <div style="text-align:center;margin-bottom:10px;padding:8px;background:var(--black-2);border:2px solid var(--gold-pale);border-radius:12px;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale)">
+        📡 Datos en vivo desde la blockchain. Top 20 por farmeo + toros.
       </div>
       <div class="leaderboard" id="leaderboard"></div>
+      <button id="lb-refresh-btn" style="width:100%;padding:12px;margin-top:10px;background:transparent;color:var(--gold-bright);border:2px dashed var(--gold);border-radius:10px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer">🔄 ACTUALIZAR RANKING</button>
     </div>
 
     <!-- PVP - Redirige a la pestaña PVP en el menú inferior -->
@@ -2973,33 +2973,115 @@
     });
   }
 
+  // ============= LEADERBOARD ON-CHAIN AUTOMÁTICO =============
+  // Lee eventos del contrato V4 para detectar jugadores activos
+  // Y calcula su score: totalHarvested + totalToros * 100
   async function renderLeaderboard() {
     const lb = document.getElementById('leaderboard');
-    lb.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim);font-family:JetBrains Mono;font-size:12px">Cargando...</div>';
-    document.getElementById('player-name').value = state.playerName || '';
+    if (!lb) return;
+    lb.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gold-bright);font-family:JetBrains Mono;font-size:12px">⏳ Cargando ranking on-chain...</div>';
+
     try {
-      const r = await Store.list('rank:', true);
-      const keys = r?.keys || [];
-      const entries = [];
-      for (const k of keys) {
-        try { const v = await Store.get(k, true); if (v) entries.push(JSON.parse(v.value)); } catch(e) {}
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const latestBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, latestBlock - 200000);
+      const eventTopic = ethers.id('BullBought(address,uint8,uint256,bool)');
+
+      const logs = await provider.getLogs({
+        address: GAME_CONTRACT,
+        topics: [eventTopic],
+        fromBlock: fromBlock,
+        toBlock: 'latest'
+      });
+
+      // Wallets únicas
+      const playersSet = new Set();
+      for (const log of logs) {
+        if (log.topics.length < 2) continue;
+        const addr = '0x' + log.topics[1].slice(26);
+        playersSet.add(addr.toLowerCase());
       }
-      entries.sort((a,b) => b.score - a.score);
-      const top = entries.slice(0, 20);
-      lb.innerHTML = '';
-      if (!top.length) {
-        lb.innerHTML = '<div style="padding:30px;text-align:center;color:var(--dim);font-family:JetBrains Mono">Sé el primero en publicar 🐂</div>';
+      const players = Array.from(playersSet);
+
+      if (players.length === 0) {
+        lb.innerHTML = '<div style="padding:30px;text-align:center;color:var(--dim);font-family:JetBrains Mono">Sé el primero en farmear 🐂</div>';
         return;
       }
+
+      // Para cada jugador, leer su stats on-chain
+      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
+      const entries = [];
+
+      for (const player of players) {
+        try {
+          const [bulls, stats] = await Promise.all([
+            game.getPlayerBulls(player),
+            game.getPlayerStats(player)
+          ]);
+
+          let totalToros = 0;
+          for (let r = 0; r < 10; r++) totalToros += Number(bulls[r]);
+
+          const totalHarvested = Number(ethers.formatEther(stats[1]));
+
+          // Score = totalHarvested + (totalToros * 100) - prioriza farmeo pero valora toros
+          const score = totalHarvested + (totalToros * 100);
+
+          if (totalToros > 0 || totalHarvested > 0) {
+            entries.push({
+              address: player,
+              totalToros,
+              totalHarvested,
+              score
+            });
+          }
+        } catch (e) {
+          console.warn('Error leyendo stats de', player, e.message);
+        }
+      }
+
+      // Ordenar por score
+      entries.sort((a, b) => b.score - a.score);
+      const top = entries.slice(0, 20);
+
+      if (!top.length) {
+        lb.innerHTML = '<div style="padding:30px;text-align:center;color:var(--dim);font-family:JetBrains Mono">Sé el primero en farmear 🐂</div>';
+        return;
+      }
+
+      const myAddr = (window.userWallet || state.walletAddress || '').toLowerCase();
+      const mk = window._MiniKit || window.MiniKit;
+
+      lb.innerHTML = `<div style="text-align:center;padding:8px;color:var(--gold-pale);font-family:JetBrains Mono;font-size:10px">🏆 ${top.length} ganaderos · Actualizado on-chain</div>`;
+
       top.forEach((e, i) => {
-        const you = e.name === state.playerName;
+        const isMe = e.address.toLowerCase() === myAddr;
+        const shortAddr = e.address.slice(0, 6) + '...' + e.address.slice(-4);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+
         const row = document.createElement('div');
-        row.className = 'lb-row' + (you ? ' you' : '');
-        row.innerHTML = `<div class="lb-rank">#${i+1}</div><div class="lb-name">${escapeHtml(e.name)}${you ? ' 👈' : ''}</div><div class="lb-score">${fmt(e.score)} BULL</div>`;
+        row.className = 'lb-row' + (isMe ? ' you' : '');
+        row.setAttribute('data-lb-addr', e.address);
+        row.innerHTML = `
+          <div class="lb-rank">${medal}</div>
+          <div class="lb-name lb-name-${e.address.slice(2,8)}">${shortAddr}${isMe ? ' 👈 TÚ' : ''}</div>
+          <div class="lb-score">${fmt(Math.floor(e.totalHarvested))} BULL · 🐂x${e.totalToros}</div>
+        `;
         lb.appendChild(row);
+
+        // Intentar reemplazar address corta por username (async sin bloquear)
+        if (mk && mk.getUserByAddress) {
+          mk.getUserByAddress(e.address).then(user => {
+            if (user && user.username) {
+              const nameEl = row.querySelector('.lb-name');
+              if (nameEl) nameEl.innerHTML = '@' + user.username + (isMe ? ' 👈 TÚ' : '');
+            }
+          }).catch(() => {});
+        }
       });
     } catch(e) {
-      lb.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim)">Error cargando</div>';
+      console.error('renderLeaderboard error:', e);
+      lb.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red-bright);font-family:JetBrains Mono;font-size:11px">Error: ${e.message.slice(0,80)}</div>`;
     }
   }
 
@@ -5129,6 +5211,7 @@
   // PVP listeners
   safeListen('pvp-search-btn', 'click', searchActivePlayers);
   safeListen('pvp-refresh-btn', 'click', loadPVPData);
+  safeListen('lb-refresh-btn', 'click', renderLeaderboard);
   safeListen('share-twitter', 'click', () => shareVia('twitter'));
   safeListen('share-copy', 'click', () => shareVia('copy'));
   safeListen('redeem-btn', 'click', redeemCode);
