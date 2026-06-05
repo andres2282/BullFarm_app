@@ -2643,6 +2643,12 @@
     try {
       const r = await Store.get('btp:v4:state');
       if (r) state = { ...state, ...JSON.parse(r.value) };
+      // V4: Limpiar el inviteCode legacy (era el "BULL173xxx" que confundía a usuarios)
+      // En V4 usamos username/wallet directamente del MiniKit
+      if (state.inviteCode) {
+        state.inviteCode = '';
+        try { await Store.set('btp:v4:state', JSON.stringify(state)); } catch(e) {}
+      }
       // Exponer wallet globalmente para funciones on-chain
       if (state.walletAddress) window.userWallet = state.walletAddress;
     } catch(e) {}
@@ -3947,11 +3953,45 @@
   }
 
   // ============= INVITACIONES =============
-  function renderInvite() {
+  async function renderInvite() {
     // Cumpliendo guideline Worldcoin: mostrar USERNAME, no wallet
     const playerAddr = window.userWallet || state.walletAddress || '';
-    const display = state.username ? '@' + state.username : (playerAddr || 'Conecta tu wallet');
+    if (!playerAddr) {
+      document.getElementById('invite-code').textContent = 'Conecta tu wallet';
+      return;
+    }
+
+    // Intentar obtener username de varias formas
+    let username = state.username || '';
+    const mk = window._MiniKit || window.MiniKit;
+
+    if (!username && mk) {
+      // Opción 1: MiniKit.user.username (después de walletAuth)
+      try {
+        if (mk.user && mk.user.username) {
+          username = mk.user.username;
+          state.username = username;
+          saveState();
+        }
+      } catch(e) {}
+
+      // Opción 2: getUserByAddress (busca por wallet)
+      if (!username && mk.getUserByAddress) {
+        try {
+          const user = await mk.getUserByAddress(playerAddr);
+          if (user && user.username) {
+            username = user.username;
+            state.username = username;
+            saveState();
+          }
+        } catch(e) { console.log('getUserByAddress error:', e.message); }
+      }
+    }
+
+    // Mostrar: @username si lo tenemos, sino wallet completa
+    const display = username ? '@' + username : playerAddr;
     document.getElementById('invite-code').textContent = display;
+
     // Los stats se actualizan desde loadReferralInfo() al cargar la pestaña
     loadReferralInfo();
   }
