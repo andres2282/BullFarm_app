@@ -4114,18 +4114,14 @@
     try {
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
       const ref = new ethers.Contract(REFERRALS_CONTRACT, REFERRALS_ABI, provider);
-      const [info, code] = await Promise.all([
-        ref.getReferralInfo(playerAddress),
-        ref.getMyCode(playerAddress)
-      ]);
+      // Solo leemos info (NO el código del contrato - usamos username/wallet)
+      const info = await ref.getReferralInfo(playerAddress);
 
       const invitedCount = Number(info[0]);
       const pending = ethers.formatUnits(info[1], 18);
       const totalClaimed = ethers.formatUnits(info[2], 18);
 
-      // Actualizar UI
-      const codeEl = document.getElementById('invite-code');
-      if (codeEl) codeEl.textContent = code;
+      // ⚠️ NO sobrescribir invite-code (lo maneja renderInvite con @username)
 
       const statFriendsEl = document.getElementById('stat-friends');
       if (statFriendsEl) statFriendsEl.textContent = invitedCount;
