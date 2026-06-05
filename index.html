@@ -2624,11 +2624,11 @@
   };
 
   // ============= CÓDIGO DE INVITACIÓN =============
-  function generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = 'BULL';
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+  // V4: NO usamos códigos generados aleatorios (no funcionan con el contrato).
+  // El usuario debe compartir su USERNAME (o wallet) directamente.
+  function getMyShareCode() {
+    if (state.username) return '@' + state.username;
+    return window.userWallet || state.walletAddress || '';
   }
 
   // ============= LÍMITES =============
@@ -3975,7 +3975,8 @@
   }
 
   function shareVia(platform) {
-    const msg = `${t('invite_msg')} ${state.inviteCode}`;
+    const myCode = getMyShareCode();
+    const msg = `${t('invite_msg')} ${myCode}`;
     const link = inviteLink();
     const full = encodeURIComponent(msg + ' ' + link);
     let url = '';
@@ -4146,32 +4147,13 @@
     }
   }
 
-  // Revisar si alguien usó mi código (cobrar 50 BULL por cada nuevo invitado)
+  // Revisar referidos - V4 usa loadReferralInfo() on-chain
+  // Esta función legacy ya no hace nada - mantenida por compatibilidad
   async function checkReferrals() {
-    if (!state.inviteCode) return;
-    try {
-      const refKey = 'ref:' + state.inviteCode;
-      const existing = await Store.get(refKey, true).catch(() => null);
-      if (!existing) return;
-      const refData = JSON.parse(existing.value);
-      const knownNames = state.friends.map(f => f.name + f.date);
-      let newOnes = 0;
-      for (const inv of (refData.invitees || [])) {
-        const key = inv.name + inv.date;
-        if (!state.friends.some(f => (f.name + f.date) === key)) {
-          state.friends.push({ name: inv.name, date: inv.date });
-          state.balance += 50;
-          state.totalEarned += 50;
-          state.friendsEarned += 50;
-          newOnes++;
-        }
-      }
-      if (newOnes > 0) {
-        await saveState();
-        renderAll();
-        toast(currentLang === 'es' ? `🎉 +${newOnes*50} BULL (${newOnes} amigo${newOnes>1?'s':''} se unió)` : `🎉 +${newOnes*50} BULL (${newOnes} friend${newOnes>1?'s':''} joined)`);
-      }
-    } catch(e) {}
+    // Llamamos a la versión on-chain
+    if (typeof loadReferralInfo === 'function') {
+      loadReferralInfo();
+    }
   }
 
   // ============= SWAP — Uniswap V3 SwapRouter02 oficial en World Chain =============
@@ -5234,11 +5216,7 @@
     await loadLang();
     await loadState();
     await loadGlobals();
-    // Generar código de invitación si no existe
-    if (!state.inviteCode) {
-      state.inviteCode = generateInviteCode();
-      await saveState();
-    }
+    // V4: NO generamos códigos - usamos username/wallet directamente
     applyI18n();
     renderAll();
     renderInvite();
