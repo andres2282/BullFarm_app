@@ -1831,12 +1831,9 @@
     <div class="pack-grid" id="pack-grid"></div>
 
     <div class="help-box">
-      <b>🎁 <span data-i18n="how_packs">¿CÓMO FUNCIONAN LOS SOBRES?</span></b>
-      <span data-i18n="how_packs_desc">Cada sobre contiene <b>1 toro aleatorio</b> según las probabilidades indicadas.<br>
-      Cuanto más raro el sobre, mejores posibilidades de obtener toros poderosos.</span><br><br>
-      <b>💰 <span data-i18n="distribution">DISTRIBUCIÓN DE LA COMPRA</span></b>
-      <span data-i18n="dist_desc">70% al Pool del contrato · 30% al Dev<br>
-      El Pool sustenta las recompensas diarias y crece con cada compra.</span>
+      <b>🐂 <span data-i18n="how_packs">¿CÓMO FUNCIONAN LOS TOROS?</span></b>
+      <span data-i18n="how_packs_desc">Cada compra te da <b>1 toro garantizado</b> de la rareza que elegiste. <b>SIN AZAR</b>.<br>
+      Sabes exactamente qué toro recibirás antes de pagar.</span>
     </div>
   </section>
 
@@ -2280,9 +2277,7 @@
       // Shop
       shop_title: 'TIENDA DE SOBRES', shop_subtitle: 'Compra sobres y descubre tu toro',
       how_packs: '¿CÓMO FUNCIONAN LOS SOBRES?',
-      how_packs_desc: 'Cada sobre contiene <b>1 toro aleatorio</b> según las probabilidades indicadas.<br>Cuanto más raro el sobre, mejores posibilidades de obtener toros poderosos.',
-      distribution: 'DISTRIBUCIÓN DE LA COMPRA',
-      dist_desc: '70% al Pool del contrato · 30% al Dev<br>El Pool sustenta las recompensas diarias y crece con cada compra.',
+      how_packs_desc: 'Cada compra te da <b>1 toro garantizado</b> de la rareza que elegiste. <b>SIN AZAR</b>.<br>Sabes exactamente qué toro recibirás antes de pagar.',
       // Stable
       my_stable: 'MI ESTABLE', live_harvest: 'COSECHA EN VIVO',
       hrs: 'Hrs', sec: 'Seg', claim_btn: 'RECLAMAR 🤑', no_btp_yet: 'SIN BULL AÚN',
@@ -2375,8 +2370,6 @@
       shop_title: 'PACK SHOP', shop_subtitle: 'Buy packs and discover your bull',
       how_packs: 'HOW DO PACKS WORK?',
       how_packs_desc: 'Each pack contains <b>1 random bull</b> based on the listed probabilities.<br>The rarer the pack, the better the chances of powerful bulls.',
-      distribution: 'PURCHASE DISTRIBUTION',
-      dist_desc: '70% to contract Pool · 30% to Dev<br>The Pool sustains daily rewards and grows with every purchase.',
       my_stable: 'MY STABLE', live_harvest: 'LIVE HARVEST',
       hrs: 'Hrs', sec: 'Sec', claim_btn: 'CLAIM 🤑', no_btp_yet: 'NO BULL YET',
       common_short: 'Common', buy_food: '🍽️ BUY FOOD',
@@ -2990,19 +2983,33 @@
     try {
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
       const latestBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, latestBlock - 200000);
+      // Reducido a 50k bloques (~24 horas en World Chain) para evitar rate limits
+      const fromBlock = Math.max(0, latestBlock - 50000);
       const eventTopic = ethers.id('BullBought(address,uint8,uint256,bool)');
 
-      const logs = await provider.getLogs({
-        address: GAME_CONTRACT,
-        topics: [eventTopic],
-        fromBlock: fromBlock,
-        toBlock: 'latest'
-      });
+      let logs = [];
+      try {
+        logs = await provider.getLogs({
+          address: GAME_CONTRACT,
+          topics: [eventTopic],
+          fromBlock: fromBlock,
+          toBlock: 'latest'
+        });
+      } catch (e) {
+        // Si falla con 50k, probar con menos
+        console.warn('getLogs 50k falló, intentando con 10k:', e.message);
+        logs = await provider.getLogs({
+          address: GAME_CONTRACT,
+          topics: [eventTopic],
+          fromBlock: Math.max(0, latestBlock - 10000),
+          toBlock: 'latest'
+        });
+      }
 
-      // Wallets únicas
+      // Wallets únicas (máximo 20 más recientes)
       const playersSet = new Set();
-      for (const log of logs) {
+      for (let i = logs.length - 1; i >= 0 && playersSet.size < 20; i--) {
+        const log = logs[i];
         if (log.topics.length < 2) continue;
         const addr = '0x' + log.topics[1].slice(26);
         playersSet.add(addr.toLowerCase());
@@ -3014,35 +3021,35 @@
         return;
       }
 
-      // Para cada jugador, leer su stats on-chain
+      lb.innerHTML = `<div style="text-align:center;padding:8px;color:var(--gold-pale);font-family:JetBrains Mono;font-size:10px">🏆 Buscando stats de ${players.length} ganaderos...</div>`;
+
+      // Para cada jugador, leer su stats on-chain (SECUENCIAL para no saturar RPC)
       const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
       const entries = [];
 
       for (const player of players) {
         try {
-          const [bulls, stats] = await Promise.all([
-            game.getPlayerBulls(player),
-            game.getPlayerStats(player)
-          ]);
+          const bulls = await game.getPlayerBulls(player);
+          // Pequeña pausa para no saturar el RPC
+          await new Promise(r => setTimeout(r, 100));
+          const stats = await game.getPlayerStats(player);
 
           let totalToros = 0;
           for (let r = 0; r < 10; r++) totalToros += Number(bulls[r]);
 
           const totalHarvested = Number(ethers.formatEther(stats[1]));
-
-          // Score = totalHarvested + (totalToros * 100) - prioriza farmeo pero valora toros
           const score = totalHarvested + (totalToros * 100);
 
           if (totalToros > 0 || totalHarvested > 0) {
-            entries.push({
-              address: player,
-              totalToros,
-              totalHarvested,
-              score
-            });
+            entries.push({ address: player, totalToros, totalHarvested, score });
           }
+
+          // Otra pausa
+          await new Promise(r => setTimeout(r, 100));
         } catch (e) {
           console.warn('Error leyendo stats de', player, e.message);
+          // Si falla, esperar más y continuar
+          await new Promise(r => setTimeout(r, 500));
         }
       }
 
@@ -3070,7 +3077,7 @@
         row.setAttribute('data-lb-addr', e.address);
         row.innerHTML = `
           <div class="lb-rank">${medal}</div>
-          <div class="lb-name lb-name-${e.address.slice(2,8)}">${shortAddr}${isMe ? ' 👈 TÚ' : ''}</div>
+          <div class="lb-name">${shortAddr}${isMe ? ' 👈 TÚ' : ''}</div>
           <div class="lb-score">${fmt(Math.floor(e.totalHarvested))} BULL · 🐂x${e.totalToros}</div>
         `;
         lb.appendChild(row);
@@ -3087,7 +3094,7 @@
       });
     } catch(e) {
       console.error('renderLeaderboard error:', e);
-      lb.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red-bright);font-family:JetBrains Mono;font-size:11px">Error: ${e.message.slice(0,80)}</div>`;
+      lb.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red-bright);font-family:JetBrains Mono;font-size:11px">El RPC está saturado. Intenta de nuevo en 1 min.<br><br><button onclick="renderLeaderboard()" style="margin-top:10px;padding:10px 20px;background:var(--gold-bright);color:var(--black);border:2px solid var(--black);border-radius:10px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer">🔄 REINTENTAR</button></div>`;
     }
   }
 
