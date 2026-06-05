@@ -2485,15 +2485,15 @@
   // 10 TOROS (siguiendo tu imagen)
   const TOROS = [
     { id: 0, name: 'Toro Común',     emoji: '🐂', image: img('toro_1_comun'),      rarity: 'Común',       color: 'r-comun',      income: 5,     desc: 'Fuerte y resistente, el más básico del establo.' },
-    { id: 1, name: 'Toro Rural',     emoji: '🐃', image: img('toro_2_rural'),      rarity: 'Rural',       color: 'r-rural',      income: 35,    desc: 'Criado en campos abiertos, con más velocidad y energía.' },
-    { id: 2, name: 'Toro Bravo',     emoji: '🐂', image: IMG_BASE + 'toro_3_bravo..png', rarity: 'Bravo',       color: 'r-bravo',      income: 110,   desc: 'Temperamento agresivo y gran poder de ataque.' },
-    { id: 3, name: 'Toro de Hierro', emoji: '🐃', image: img('toro_4_hierro'),     rarity: 'Hierro',      color: 'r-hierro',     income: 320,   desc: 'Piel dura como metal, difícil de derrotar.' },
-    { id: 4, name: 'Toro Salvaje',   emoji: '🐂', image: img('toro_5_salvaje'),    rarity: 'Salvaje',     color: 'r-salvaje',    income: 850,   desc: 'Vive libre y posee fuerza impredecible.' },
-    { id: 5, name: 'Toro Alfa',      emoji: '🐃', image: img('toro_6_alfa'),       rarity: 'Alfa',        color: 'r-alfa',       income: 2200,  desc: 'Lidera la manada y domina a los demás toros.' },
-    { id: 6, name: 'Toro Legendario',emoji: '🐂', image: img('toro_7_legendario'), rarity: 'Legendario',  color: 'r-legendario', income: 5500,  desc: 'Muy raro, conocido por su increíble resistencia.' },
-    { id: 7, name: 'Toro Celestial', emoji: '🐃', image: img('toro_8_celestial'),  rarity: 'Celestial',   color: 'r-celestial',  income: 13000, desc: 'Envuelto en energía divina y velocidad sobrenatural.' },
-    { id: 8, name: 'Toro Titán',     emoji: '🐂', image: img('toro_9_titan'),      rarity: 'Titán',       color: 'r-titan',      income: 30000, desc: 'Gigante colosal con poder devastador.' },
-    { id: 9, name: 'Toro Supremo',   emoji: '🐃', image: img('toro_10_supremo'),   rarity: 'Supremo',     color: 'r-supremo',    income: 70000, desc: 'El más poderoso, dueño absoluto de la arena.' },
+    { id: 1, name: 'Toro Rural',     emoji: '🐃', image: img('toro_2_rural'),      rarity: 'Rural',       color: 'r-rural',      income: 15,    desc: 'Criado en campos abiertos, con más velocidad y energía.' },
+    { id: 2, name: 'Toro Bravo',     emoji: '🐂', image: IMG_BASE + 'toro_3_bravo..png', rarity: 'Bravo',       color: 'r-bravo',      income: 50,    desc: 'Temperamento agresivo y gran poder de ataque.' },
+    { id: 3, name: 'Toro de Hierro', emoji: '🐃', image: img('toro_4_hierro'),     rarity: 'Hierro',      color: 'r-hierro',     income: 150,   desc: 'Piel dura como metal, difícil de derrotar.' },
+    { id: 4, name: 'Toro Salvaje',   emoji: '🐂', image: img('toro_5_salvaje'),    rarity: 'Salvaje',     color: 'r-salvaje',    income: 400,   desc: 'Vive libre y posee fuerza impredecible.' },
+    { id: 5, name: 'Toro Alfa',      emoji: '🐃', image: img('toro_6_alfa'),       rarity: 'Alfa',        color: 'r-alfa',       income: 1000,  desc: 'Lidera la manada y domina a los demás toros.' },
+    { id: 6, name: 'Toro Legendario',emoji: '🐂', image: img('toro_7_legendario'), rarity: 'Legendario',  color: 'r-legendario', income: 2500,  desc: 'Muy raro, conocido por su increíble resistencia.' },
+    { id: 7, name: 'Toro Celestial', emoji: '🐃', image: img('toro_8_celestial'),  rarity: 'Celestial',   color: 'r-celestial',  income: 6000,  desc: 'Envuelto en energía divina y velocidad sobrenatural.' },
+    { id: 8, name: 'Toro Titán',     emoji: '🐂', image: img('toro_9_titan'),      rarity: 'Titán',       color: 'r-titan',      income: 14000, desc: 'Gigante colosal con poder devastador.' },
+    { id: 9, name: 'Toro Supremo',   emoji: '🐃', image: img('toro_10_supremo'),   rarity: 'Supremo',     color: 'r-supremo',    income: 32000, desc: 'El más poderoso, dueño absoluto de la arena.' },
   ];
 
   // SOBRES con precios reales (BULL o WLD según el sobre)
@@ -2503,7 +2503,7 @@
     {
       id: 'comun',  name: 'TORO COMÚN',  brand: 'BULL', emoji: '🐂', image: img('sobre_comun'),
       currency: 'BFM',
-      priceOld: 75,   price: 50,
+      priceOld: 300,   price: 200,
       borderColor: '#9aa0a6', glow: '#d4d4d4',
       bg1: '#1a1a1a', bg2: '#000',
       probs: [ { id: 0, pct: 100 } ]
@@ -2511,7 +2511,7 @@
     {
       id: 'rural', name: 'TORO RURAL', brand: 'BULL', emoji: '🐃', image: img('sobre_rural'),
       currency: 'BFM',
-      priceOld: 400,   price: 300,
+      priceOld: 2400,   price: 1800,
       borderColor: '#4ade80', glow: '#22c55e',
       bg1: '#0a2e0a', bg2: '#000',
       probs: [ { id: 1, pct: 100 } ]
@@ -2519,7 +2519,7 @@
     {
       id: 'bravo', name: 'TORO BRAVO', brand: 'BULL', emoji: '🐂', image: img('sobre_bravo'),
       currency: 'BFM',
-      priceOld: 1300,  price: 1000,
+      priceOld: 8000,  price: 6000,
       borderColor: '#fb923c', glow: '#f97316',
       bg1: '#2e1500', bg2: '#000',
       probs: [ { id: 2, pct: 100 } ]
@@ -2527,7 +2527,7 @@
     {
       id: 'epico', name: 'TORO ÉPICO', brand: 'BULL', emoji: '🐃', image: img('sobre_epico'),
       currency: 'BFM',
-      priceOld: 4000,  price: 3000,
+      priceOld: 24000,  price: 18000,
       borderColor: '#38bdf8', glow: '#0ea5e9',
       bg1: '#001a2e', bg2: '#000',
       probs: [ { id: 3, pct: 100 } ]
@@ -2535,7 +2535,7 @@
     {
       id: 'alfa',  name: 'TORO ALFA',  brand: 'BULL', emoji: '🐂', image: img('sobre_alfa'),
       currency: 'WLD',
-      priceOld: 6,  price: 5,
+      priceOld: 8,  price: 6,
       borderColor: '#facc15', glow: '#eab308',
       bg1: '#2e2400', bg2: '#000',
       probs: [ { id: 4, pct: 100 } ]
@@ -2551,7 +2551,7 @@
     {
       id: 'divino', name: 'TORO DIVINO', brand: 'BULL', emoji: '🐂', image: img('sobre_divino'),
       currency: 'WLD',
-      priceOld: 35, price: 28,
+      priceOld: 65, price: 50,
       borderColor: '#06b6d4', glow: '#0891b2',
       bg1: '#001a1a', bg2: '#000',
       probs: [ { id: 6, pct: 100 } ]
@@ -2559,7 +2559,7 @@
     {
       id: 'supremo', name: 'TORO SUPREMO', brand: 'BULL', emoji: '🐃', image: img('sobre_supremo'),
       currency: 'WLD',
-      priceOld: 75, price: 60,
+      priceOld: 160, price: 130,
       borderColor: '#ef4444', glow: '#dc2626',
       bg1: '#2e0000', bg2: '#000',
       probs: [ { id: 7, pct: 100 } ]
@@ -2567,7 +2567,7 @@
     {
       id: 'god', name: 'TORO GOD', brand: '👑 BULL', emoji: '🐂', image: img('sobre_god'),
       currency: 'WLD',
-      priceOld: 160, price: 130,
+      priceOld: 400, price: 300,
       borderColor: '#FFD700', glow: '#f59e0b',
       bg1: '#3d2a00', bg2: '#1a1a00',
       probs: [ { id: 8, pct: 100 } ]
@@ -4216,7 +4216,7 @@
   // ============= JUEGO ON-CHAIN — BullFarmGameV2 (Permit2 Edition) =============
   // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
   // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
-  const GAME_CONTRACT      = '0xF3d1cC540C196c49ADEe74EF7d34dd35fe08C8C8'; // BullFarmGameV4 - BULL token, PVP, EXP, hambre, swap
+  const GAME_CONTRACT      = '0xAf0814aE637f631F42e034eFB686248302923F94'; // BullFarmGameV5 - precios dinámicos, ataques+venganza, pausa
   const REFERRALS_CONTRACT = '0x85dc36E4Cb98E04cE88d8CFfdf70594CdD75A069'; // BullFarmReferrals - sistema de invitaciones on-chain
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
