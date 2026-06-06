@@ -2161,6 +2161,43 @@
       </div>
     </div>
 
+    <!-- ===== ATAQUES AL RANCHO (sin aceptación) ===== -->
+    <div style="background:linear-gradient(135deg,#7c2d12,var(--black));border:3px solid #ef4444;border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:5px 5px 0 var(--black)">
+      <div style="font-family:Anton,sans-serif;font-size:16px;color:#ef4444;letter-spacing:3px;text-align:center;text-shadow:2px 2px 0 var(--black)">🏰 ATAQUES AL RANCHO</div>
+      <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:12px;color:var(--gold-pale);text-align:center;margin-top:4px;margin-bottom:8px">Ataca rancho rival y roba su BULL pendiente</div>
+
+      <div style="background:rgba(0,0,0,0.5);border:1px solid var(--gold);border-radius:10px;padding:8px;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--white);margin-bottom:10px">
+        ⚔️ <span id="raids-remaining">3/3</span> ATAQUES HOY · 50 BULL c/u<br>
+        🏆 Tu defensa total: <span id="my-defense" style="color:var(--gold-bright);font-weight:bold">—</span> EXP
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);display:block;margin-bottom:4px">Tu toro atacante:</label>
+        <select id="raid-my-rarity" style="width:100%;padding:8px;background:var(--black);color:var(--gold-bright);border:2px solid #ef4444;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:12px">
+          <option value="">-- Elige toro --</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);display:block;margin-bottom:4px">Rancho rival (wallet o @user):</label>
+        <input type="text" id="raid-target" placeholder="@usuario o 0x..." style="width:100%;padding:8px;background:var(--black);color:var(--white);border:2px solid #ef4444;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:11px;box-sizing:border-box" />
+      </div>
+
+      <button id="raid-attack-btn" style="width:100%;padding:14px;background:#ef4444;color:white;border:3px solid var(--black);border-radius:12px;font-family:Anton,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:3px 3px 0 var(--black)">🗡️ ATACAR (50 BULL)</button>
+      <div id="raid-status" style="text-align:center;margin-top:6px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--gold-pale);min-height:14px"></div>
+    </div>
+
+    <!-- ===== ATAQUES RECIBIDOS (con botón VENGANZA) ===== -->
+    <div style="background:var(--black-2);border:2px solid #fbbf24;border-radius:18px;padding:12px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:Anton,sans-serif;font-size:13px;color:#fbbf24;letter-spacing:2px">🛡️ ATAQUES RECIBIDOS</div>
+        <button id="raids-refresh-btn" style="background:#fbbf24;color:var(--black);border:1px solid var(--black);border-radius:8px;padding:4px 10px;font-family:Anton,sans-serif;font-size:10px;letter-spacing:1px;cursor:pointer">🔄</button>
+      </div>
+      <div id="raids-received-list">
+        <div style="text-align:center;padding:14px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">⏳ Cargando ataques recibidos...</div>
+      </div>
+    </div>
+
     <!-- Retos pendientes (entrantes) -->
     <div style="background:var(--black-2);border:2px solid var(--gold);border-radius:18px;padding:12px;margin-bottom:14px">
       <div style="font-family:Anton,sans-serif;font-size:13px;color:var(--gold-bright);letter-spacing:2px;margin-bottom:8px">📥 RETOS RECIBIDOS</div>
@@ -2982,37 +3019,52 @@
 
     try {
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
       const latestBlock = await provider.getBlockNumber();
-      // Reducido a 50k bloques (~24 horas en World Chain) para evitar rate limits
-      const fromBlock = Math.max(0, latestBlock - 50000);
+      // RPC limita a 100 bloques por llamada. Hacemos chunks pequeños.
+      const totalBlocks = 5000;
+      const chunkSize = 100;
+      const fromBlock = Math.max(0, latestBlock - totalBlocks);
       const eventTopic = ethers.id('BullBought(address,uint8,uint256,bool)');
 
-      let logs = [];
-      try {
-        logs = await provider.getLogs({
-          address: GAME_CONTRACT,
-          topics: [eventTopic],
-          fromBlock: fromBlock,
-          toBlock: 'latest'
-        });
-      } catch (e) {
-        // Si falla con 50k, probar con menos
-        console.warn('getLogs 50k falló, intentando con 10k:', e.message);
-        logs = await provider.getLogs({
-          address: GAME_CONTRACT,
-          topics: [eventTopic],
-          fromBlock: Math.max(0, latestBlock - 10000),
-          toBlock: 'latest'
-        });
-      }
+      // Pre-cargar lista conocida de usuarios migrados (siempre incluir estos)
+      const knownPlayers = new Set([
+        '0x76bc732789b7821deaaf767fd8e1235cd3d4e1db',
+        '0xa33598af8fb9a387e1bd8b63d6440d6d813d75ed',
+        '0x85977e6952f40283244b6fbbc6f4bfae6b4a4ce4',
+        '0xf5e714ce9ecc4e728a8c3478f451c602ce42a5b0',
+        '0xed53b656abe1caa26ad4447640c035ec980deab9',
+        '0x92d378af8409ba42ffc44ea1c8f856766d1662bf',
+        '0x70b765ab3f2c37da83ca78a2362f3563816dde68',
+        '0xfb2bace0dc34b5d4b6c0494671a60fd398949579'
+      ]);
+      const playersSet = new Set(knownPlayers);
 
-      // Wallets únicas (máximo 20 más recientes)
-      const playersSet = new Set();
-      for (let i = logs.length - 1; i >= 0 && playersSet.size < 20; i--) {
-        const log = logs[i];
-        if (log.topics.length < 2) continue;
-        const addr = '0x' + log.topics[1].slice(26);
-        playersSet.add(addr.toLowerCase());
+      // Buscar nuevos jugadores en eventos recientes (chunks 100 bloques)
+      const numChunks = Math.ceil(totalBlocks / chunkSize);
+      lb.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gold-bright);font-family:JetBrains Mono;font-size:11px">📡 Buscando jugadores (${numChunks} chunks)...</div>`;
+      let processed = 0;
+      for (let i = numChunks - 1; i >= 0; i--) {
+        const startBlock = fromBlock + (i * chunkSize);
+        const endBlock = Math.min(startBlock + chunkSize - 1, latestBlock);
+        try {
+          const logs = await provider.getLogs({
+            address: GAME_CONTRACT,
+            topics: [eventTopic],
+            fromBlock: startBlock,
+            toBlock: endBlock
+          });
+          for (const log of logs) {
+            if (log.topics.length < 2) continue;
+            const addr = '0x' + log.topics[1].slice(26);
+            playersSet.add(addr.toLowerCase());
+          }
+        } catch (e) {}
+        processed++;
+        if (processed % 10 === 0) {
+          lb.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gold-bright);font-family:JetBrains Mono;font-size:11px">📡 ${processed}/${numChunks} chunks · ${playersSet.size} jugadores</div>`;
+        }
+        await new Promise(r => setTimeout(r, 30));
       }
       const players = Array.from(playersSet);
 
@@ -3023,8 +3075,6 @@
 
       lb.innerHTML = `<div style="text-align:center;padding:8px;color:var(--gold-pale);font-family:JetBrains Mono;font-size:10px">🏆 Buscando stats de ${players.length} ganaderos...</div>`;
 
-      // Para cada jugador, leer su stats on-chain (SECUENCIAL para no saturar RPC)
-      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
       const entries = [];
 
       for (const player of players) {
@@ -3495,6 +3545,296 @@
       listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red-bright);font-family:JetBrains Mono;font-size:11px">Error: ${e.message.slice(0,80)}</div>`;
     }
   }
+
+  // ============= ATAQUES AL RANCHO + VENGANZA (V5) =============
+
+  async function loadRaidsData() {
+    const playerAddress = window.userWallet || state.walletAddress;
+    if (!playerAddress) return;
+
+    try {
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
+
+      // Cargar datos en paralelo
+      const [bulls, exps, remaining, defense] = await Promise.all([
+        game.getPlayerBulls(playerAddress),
+        game.getAllBullExp(playerAddress),
+        game.raidsRemainingToday(playerAddress),
+        game.getRanchDefense(playerAddress)
+      ]);
+
+      // Actualizar contador
+      const remEl = document.getElementById('raids-remaining');
+      if (remEl) remEl.textContent = `${remaining}/3`;
+
+      // Defensa total
+      const defEl = document.getElementById('my-defense');
+      if (defEl) defEl.textContent = Number(defense).toLocaleString();
+
+      // Llenar selector de toros (los que tengas)
+      const select = document.getElementById('raid-my-rarity');
+      if (select) {
+        const current = select.value;
+        select.innerHTML = '<option value="">-- Elige toro --</option>';
+        for (let r = 0; r < 10; r++) {
+          const count = Number(bulls[r]);
+          if (count === 0) continue;
+          const exp = Number(exps[r]);
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = `${RARITY_NAMES[r]} (x${count}) · EXP ${exp.toLocaleString()}`;
+          select.appendChild(opt);
+        }
+        if (current) select.value = current;
+      }
+
+      // Cargar ataques recibidos
+      await loadRaidsReceived(playerAddress, game);
+    } catch (e) {
+      console.error('loadRaidsData error:', e);
+    }
+  }
+
+  async function loadRaidsReceived(playerAddress, game) {
+    const listEl = document.getElementById('raids-received-list');
+    if (!listEl) return;
+
+    try {
+      // Total de raids recibidos
+      const totalReceived = Number(await game.getRaidsReceivedCount(playerAddress));
+      if (totalReceived === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">🛡️ Aún no te han atacado</div>';
+        return;
+      }
+
+      // Obtener últimos 20 raids
+      const start = Math.max(0, totalReceived - 20);
+      const ids = await game.getRaidsReceived(playerAddress, start, 20);
+
+      const raidsData = [];
+      for (let i = ids.length - 1; i >= 0; i--) {
+        const raidId = Number(ids[i]);
+        try {
+          const r = await game.raids(raidId);
+          const canRevenge = await game.canTakeRevenge(playerAddress, raidId);
+          raidsData.push({
+            id: raidId,
+            attacker: r[0],
+            defender: r[1],
+            attackerRarity: Number(r[2]),
+            attackerPower: Number(r[3]),
+            defenderPower: Number(r[4]),
+            stolen: Number(ethers.formatEther(r[5])),
+            attackerWon: r[6],
+            timestamp: Number(r[7]),
+            canRevenge: canRevenge
+          });
+        } catch(e) { console.warn('Error reading raid', raidId, e.message); }
+      }
+
+      // Renderizar
+      if (raidsData.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--dim);font-family:JetBrains Mono;font-size:11px">No hay ataques</div>';
+        return;
+      }
+
+      listEl.innerHTML = raidsData.map(r => {
+        const date = new Date(r.timestamp * 1000);
+        const hoursAgo = (Date.now()/1000 - r.timestamp) / 3600;
+        const timeStr = hoursAgo < 1 ? `${Math.floor(hoursAgo * 60)}min` : `${hoursAgo.toFixed(1)}h`;
+        const shortAddr = r.attacker.slice(0,6) + '...' + r.attacker.slice(-4);
+        const resultIcon = r.attackerWon ? '🔴 PERDISTE' : '🟢 DEFENDISTE';
+        const resultColor = r.attackerWon ? '#ef4444' : '#84cc16';
+        const stolenMsg = r.attackerWon ? `<div style="color:#ef4444;font-family:JetBrains Mono,monospace;font-size:11px">💸 Te robó ${r.stolen.toFixed(2)} BULL</div>` : '';
+
+        const toroAtacante = TOROS[r.attackerRarity];
+        const toroImg = toroAtacante ? `<img src="${toroAtacante.image}" alt="${toroAtacante.name}" onerror="this.outerHTML='${RARITY_EMOJIS[r.attackerRarity]}'" style="width:28px;height:28px;object-fit:contain;vertical-align:middle" />` : RARITY_EMOJIS[r.attackerRarity];
+
+        const revengeBtn = r.canRevenge ? `
+          <select class="revenge-rarity" data-id="${r.id}" style="width:100%;padding:6px;background:var(--black);color:var(--gold-bright);border:1px solid #ef4444;border-radius:6px;font-family:JetBrains Mono,monospace;font-size:11px;margin-bottom:6px;margin-top:6px">
+            <option value="">-- Tu toro vengador --</option>
+          </select>
+          <button class="revenge-btn" data-id="${r.id}" style="width:100%;padding:10px;background:#ef4444;color:white;border:2px solid var(--black);border-radius:8px;font-family:Anton,sans-serif;font-size:12px;letter-spacing:1.5px;cursor:pointer">🔥 VENGARSE (50 BULL)</button>
+        ` : '';
+
+        return `
+          <div style="background:rgba(239,68,68,0.1);border:2px solid var(--gold-pale);border-radius:12px;padding:10px;margin-bottom:8px">
+            <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--gold-pale);margin-bottom:4px;display:flex;justify-content:space-between">
+              <span>${shortAddr}</span>
+              <span>${timeStr} atrás</span>
+            </div>
+            <div style="font-family:Anton,sans-serif;font-size:13px;color:var(--gold-bright);margin-bottom:4px;display:flex;align-items:center;gap:6px">
+              ${toroImg} ${RARITY_NAMES[r.attackerRarity]} te atacó
+            </div>
+            <div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--white);margin-bottom:4px">
+              ⚔️ ${r.attackerPower.toLocaleString()} EXP vs 🛡️ ${r.defenderPower.toLocaleString()} EXP
+            </div>
+            <div style="color:${resultColor};font-family:Anton,sans-serif;font-size:12px;letter-spacing:1px">
+              ${resultIcon}
+            </div>
+            ${stolenMsg}
+            ${revengeBtn}
+          </div>
+        `;
+      }).join('');
+
+      // Llenar selects de venganza con los toros del usuario
+      const bulls = await game.getPlayerBulls(playerAddress);
+      document.querySelectorAll('.revenge-rarity').forEach(sel => {
+        for (let r = 0; r < 10; r++) {
+          const count = Number(bulls[r]);
+          if (count === 0) continue;
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = `${RARITY_NAMES[r]} (x${count})`;
+          sel.appendChild(opt);
+        }
+      });
+
+      // Listeners de venganza
+      listEl.querySelectorAll('.revenge-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id);
+          const sel = listEl.querySelector(`.revenge-rarity[data-id="${id}"]`);
+          const rarity = sel ? parseInt(sel.value) : NaN;
+          if (isNaN(rarity)) { toast('Selecciona tu toro vengador'); return; }
+          executeRevenge(id, rarity);
+        });
+      });
+    } catch (e) {
+      console.error('loadRaidsReceived error:', e);
+      listEl.innerHTML = `<div style="text-align:center;padding:14px;color:#ef4444;font-family:JetBrains Mono;font-size:10px">Error: ${e.message.slice(0,60)}</div>`;
+    }
+  }
+
+  async function attackRanch() {
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk) { toast('Abre dentro de World App'); return; }
+
+    const rarity = parseInt(document.getElementById('raid-my-rarity').value);
+    let target = document.getElementById('raid-target').value.trim();
+    const statusEl = document.getElementById('raid-status');
+
+    if (isNaN(rarity)) { statusEl.textContent = '❌ Selecciona tu toro'; return; }
+    if (!target) { statusEl.textContent = '❌ Pega wallet o username'; return; }
+
+    // Si es username, resolverlo a wallet
+    if (target.startsWith('@')) target = target.slice(1);
+    if (!target.startsWith('0x') || target.length !== 42) {
+      statusEl.textContent = '⏳ Buscando usuario...';
+      try {
+        if (mk.getUserByUsername) {
+          const user = await mk.getUserByUsername(target);
+          if (user && user.walletAddress) {
+            target = user.walletAddress;
+          } else {
+            statusEl.textContent = '❌ Usuario no encontrado';
+            return;
+          }
+        } else {
+          statusEl.textContent = '❌ Pega wallet 0x... completa';
+          return;
+        }
+      } catch (e) {
+        statusEl.textContent = '❌ Usuario no encontrado';
+        return;
+      }
+    }
+
+    const myAddr = window.userWallet || state.walletAddress;
+    if (target.toLowerCase() === myAddr.toLowerCase()) {
+      statusEl.textContent = '❌ No puedes atacarte a ti mismo';
+      return;
+    }
+
+    statusEl.textContent = '⏳ Atacando rancho...';
+
+    try {
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const RAID_COST = ethers.parseEther('50');
+
+      const permitSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permitData = permitSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [BFM_ADDR, GAME_CONTRACT, RAID_COST, 0]
+      ).slice(2);
+
+      const raidSel = ethers.id('raidRanch(address,uint8)').slice(0,10);
+      const raidData = raidSel + abiCoder.encode(
+        ['address','uint8'],
+        [target, rarity]
+      ).slice(2);
+
+      const result = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [
+          { to: PERMIT2, data: permitData },
+          { to: GAME_CONTRACT, data: raidData }
+        ]
+      });
+      const payload = result?.finalPayload || result?.data || result;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        statusEl.textContent = '❌ ' + (payload?.error_code || 'error');
+        return;
+      }
+
+      statusEl.textContent = '✅ ¡Ataque ejecutado!';
+      toast('🗡️ Ataque enviado al rancho!');
+      document.getElementById('raid-target').value = '';
+      setTimeout(loadRaidsData, 4000);
+    } catch (e) {
+      console.error('attackRanch error:', e);
+      statusEl.textContent = '❌ ' + e.message.slice(0,40);
+    }
+  }
+
+  async function executeRevenge(raidId, rarity) {
+    const mk = window._MiniKit || window.MiniKit;
+    if (!mk) { toast('Abre dentro de World App'); return; }
+
+    toast('🔥 Ejecutando venganza...');
+
+    try {
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const RAID_COST = ethers.parseEther('50');
+
+      const permitSel = ethers.id('approve(address,address,uint160,uint48)').slice(0,10);
+      const permitData = permitSel + abiCoder.encode(
+        ['address','address','uint160','uint48'],
+        [BFM_ADDR, GAME_CONTRACT, RAID_COST, 0]
+      ).slice(2);
+
+      const revengeSel = ethers.id('takeRevenge(uint256,uint8)').slice(0,10);
+      const revengeData = revengeSel + abiCoder.encode(
+        ['uint256','uint8'],
+        [raidId, rarity]
+      ).slice(2);
+
+      const result = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [
+          { to: PERMIT2, data: permitData },
+          { to: GAME_CONTRACT, data: revengeData }
+        ]
+      });
+      const payload = result?.finalPayload || result?.data || result;
+
+      if (payload?.status === 'error' || payload?.error_code) {
+        toast('❌ ' + (payload?.error_code || 'error'));
+        return;
+      }
+
+      toast('🔥 ¡VENGANZA ejecutada!');
+      setTimeout(loadRaidsData, 4000);
+    } catch (e) {
+      console.error('executeRevenge error:', e);
+      toast('❌ Error: ' + e.message.slice(0,40));
+    }
+  }
+
+  // ============= FIN ATAQUES + VENGANZA =============
 
   async function loadPVPData() {
     const playerAddress = window.userWallet || state.walletAddress;
@@ -4661,7 +5001,17 @@
     'function getChallengeCount() view returns (uint256)',
     'function pvpRemainingToday(address user) view returns (uint8)',
     'function calculateBullExp(address user, uint8 rarity) view returns (uint256)',
-    'function getAllBullExp(address user) view returns (uint256[10])'
+    'function getAllBullExp(address user) view returns (uint256[10])',
+    // V5: Sistema de ataques al rancho y venganza
+    'function raidRanch(address defender, uint8 attackerRarity) returns (uint256 raidId)',
+    'function takeRevenge(uint256 raidId, uint8 attackerRarity) returns (uint256 newRaidId)',
+    'function getRanchDefense(address user) view returns (uint256)',
+    'function raidsRemainingToday(address user) view returns (uint8)',
+    'function raids(uint256) view returns (address attacker, address defender, uint8 attackerRarity, uint256 attackerPower, uint256 defenderPower, uint256 stolen, bool attackerWon, uint256 timestamp)',
+    'function getRaidsReceived(address user, uint256 startIdx, uint256 count) view returns (uint256[])',
+    'function getRaidsReceivedCount(address user) view returns (uint256)',
+    'function canTakeRevenge(address user, uint256 raidId) view returns (bool)',
+    'function getRaidCount() view returns (uint256)'
   ];
 
   // ============= PERMIT2 ABI (Allowance Transfer) =============
@@ -5086,12 +5436,119 @@
 
       await saveState();
       if (typeof renderAll === 'function') renderAll();
+
+      // V5: Si no tiene toros, verificar si estaba en V4 y notificar
+      checkMigrationStatus(bulls);
     } catch (e) {
       console.error('syncBullsFromChain error:', e);
     }
   }
   // Exponer globalmente para usar en otros lugares (ej. después de comprar)
   window.syncBullsFromChain = syncBullsFromChain;
+
+  // V5: Verificar si el usuario fue migrado desde V4 y mostrar mensaje informativo
+  async function checkMigrationStatus(currentBulls) {
+    if (!state.walletAddress) return;
+
+    // Si tiene toros en V5 → todo bien, no mostrar nada
+    let totalToros = 0;
+    if (currentBulls) {
+      for (let r = 0; r < 10; r++) totalToros += Number(currentBulls[r]);
+    }
+    if (totalToros > 0) {
+      // Ocultar banner de migración si existe
+      const banner = document.getElementById('migration-banner');
+      if (banner) banner.remove();
+      return;
+    }
+
+    // No tiene toros - mostrar banner informativo
+    showMigrationBanner();
+  }
+
+  function showMigrationBanner() {
+    // Evitar duplicados
+    if (document.getElementById('migration-banner')) return;
+
+    // Lista de wallets migradas del V4 (snapshot)
+    const migratedWallets = new Set([
+      '0x76bc732789b7821deaaf767fd8e1235cd3d4e1db',
+      '0xa33598af8fb9a387e1bd8b63d6440d6d813d75ed',
+      '0x85977e6952f40283244b6fbbc6f4bfae6b4a4ce4',
+      '0xf5e714ce9ecc4e728a8c3478f451c602ce42a5b0',
+      '0xed53b656abe1caa26ad4447640c035ec980deab9',
+      '0x92d378af8409ba42ffc44ea1c8f856766d1662bf',
+      '0x70b765ab3f2c37da83ca78a2362f3563816dde68',
+      '0xfb2bace0dc34b5d4b6c0494671a60fd398949579'
+    ]);
+
+    const myAddr = state.walletAddress.toLowerCase();
+    const wasMigrated = migratedWallets.has(myAddr);
+
+    const banner = document.createElement('div');
+    banner.id = 'migration-banner';
+    banner.style.cssText = 'background:linear-gradient(135deg,#facc15,#f59e0b);border:3px solid var(--black);border-radius:18px;padding:14px;margin:14px;box-shadow:4px 4px 0 var(--red-dark);position:relative';
+
+    if (wasMigrated) {
+      banner.innerHTML = `
+        <div style="font-family:Anton,sans-serif;font-size:16px;color:var(--black);letter-spacing:2px;text-align:center;margin-bottom:8px">⚠️ TUS TOROS NO APARECEN</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--black);line-height:1.6;background:rgba(255,255,255,0.5);border-radius:10px;padding:10px;margin-bottom:8px">
+          Tu wallet SÍ fue migrada al V5. Si no ves tus toros:<br>
+          1. Cierra COMPLETAMENTE la app<br>
+          2. Reabre BullFarm<br>
+          3. Verifica que estés con la misma wallet
+        </div>
+        <button onclick="window.checkV5Status()" style="width:100%;padding:10px;background:var(--black);color:var(--gold-bright);border:2px solid var(--black);border-radius:8px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer">🔄 VERIFICAR DE NUEVO</button>
+      `;
+    } else {
+      banner.innerHTML = `
+        <div style="font-family:Anton,sans-serif;font-size:16px;color:var(--black);letter-spacing:2px;text-align:center;margin-bottom:8px">👋 ¡BIENVENIDO A BULLFARM V5!</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--black);line-height:1.6;background:rgba(255,255,255,0.5);border-radius:10px;padding:10px;margin-bottom:8px">
+          Empieza tu rancho comprando tu primer toro.<br>
+          🐂 Toro Común: 200 BULL<br>
+          ⚡ Producción: 5 BULL/día<br>
+          ¡Aliméntalo cada 12 horas para que produzca!
+        </div>
+        <button onclick="document.querySelector('.nav-btn[data-view=tienda]').click()" style="width:100%;padding:10px;background:var(--black);color:var(--gold-bright);border:2px solid var(--black);border-radius:8px;font-family:Anton,sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer">🛒 IR A LA TIENDA</button>
+      `;
+    }
+
+    // Insertar al inicio de la vista inicio
+    const viewInicio = document.getElementById('view-inicio');
+    if (viewInicio && viewInicio.firstChild) {
+      viewInicio.insertBefore(banner, viewInicio.firstChild);
+    } else if (viewInicio) {
+      viewInicio.appendChild(banner);
+    }
+  }
+
+  // Función para que el botón "VERIFICAR" la pueda llamar
+  window.checkV5Status = async function() {
+    if (!state.walletAddress) {
+      toast('Conecta tu wallet primero');
+      return;
+    }
+    toast('🔄 Verificando V5...');
+    try {
+      const provider = new ethers.JsonRpcProvider(WORLD_RPC);
+      const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
+      const bulls = await game.getPlayerBulls(state.walletAddress);
+      let total = 0;
+      for (let r = 0; r < 10; r++) total += Number(bulls[r]);
+
+      if (total > 0) {
+        toast(`✅ Tienes ${total} toros en V5! Sincronizando...`);
+        await syncBullsFromChain();
+        const banner = document.getElementById('migration-banner');
+        if (banner) banner.remove();
+      } else {
+        toast('No tienes toros aún. Visita la Tienda.');
+      }
+    } catch (e) {
+      console.error('checkV5Status error:', e);
+      toast('❌ Error verificando');
+    }
+  };
 
   function updateVerifiedBadge() {
     // Cambia el monedero del header a "verificado" si aplica
@@ -5193,7 +5650,7 @@
       if (btn.dataset.view === 'tienda') renderTienda();
       if (btn.dataset.view === 'establo') renderEstablo();
       if (btn.dataset.view === 'fusion') renderFusion();
-      if (btn.dataset.view === 'pvp') { loadPVPData(); searchActivePlayers(); }
+      if (btn.dataset.view === 'pvp') { loadPVPData(); searchActivePlayers(); loadRaidsData(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
@@ -5238,6 +5695,9 @@
   safeListen('pvp-search-btn', 'click', searchActivePlayers);
   safeListen('pvp-refresh-btn', 'click', loadPVPData);
   safeListen('lb-refresh-btn', 'click', renderLeaderboard);
+  // Sistema de ataques al rancho + venganza
+  safeListen('raid-attack-btn', 'click', attackRanch);
+  safeListen('raids-refresh-btn', 'click', loadRaidsData);
   safeListen('share-twitter', 'click', () => shareVia('twitter'));
   safeListen('share-copy', 'click', () => shareVia('copy'));
   safeListen('redeem-btn', 'click', redeemCode);
