@@ -4540,32 +4540,27 @@
   }
 
   // ============= SWAP — Uniswap V3 SwapRouter02 oficial en World Chain =============
-  // Tu pool BULL/WLD está en Uniswap V3 oficial, confirmado en el explorer.
-  // Direcciones oficiales: https://docs.uniswap.org/contracts/v3/reference/deployments
-  const BFM_CONTRACT       = '0x1B1F1F29B76d83B30CaAcb7326CD325A0Bb7E9f0';  // Token BullFarm
+  // Pool BULL/WLD oficial: 0x6110134553Eb67674803e49c96AEFC3712921dF1 (fee 1%)
+  const BULL_CONTRACT      = '0x1B1F1F29B76d83B30CaAcb7326CD325A0Bb7E9f0';  // Token BULL
+  const BFM_CONTRACT       = BULL_CONTRACT;  // Alias legacy (no romper código viejo)
   const WLD_CONTRACT       = '0x2cFc85d8E48F8EAB294be644d9E25C3030863003';
-  const BFM_WLD_POOL       = '0x37eC30147AE0a306d7ABC53325bD44BcE32C3ED4';  // Pool Uniswap V3
-  const GAME_VAULT_V2      = '0x797A4bBd03aDE450c0384EaF94B948DeB697Cbd3';  // Vault dual (legacy, mantener)
+  const BULL_WLD_POOL      = '0x6110134553Eb67674803e49c96AEFC3712921dF1';  // Pool Uniswap V3 fee 10000
+  const BFM_WLD_POOL       = BULL_WLD_POOL;  // Alias legacy
   const SWAP_ROUTER_02     = '0x091AD9e2e6e5eD44c1c66dB50e49A601F9f36cF6';  // SwapRouter02 confirmado
   const UNIVERSAL_ROUTER   = '0x8ac7bee993bb44dab564ea4bc9ea67bf9eb5e743';
-  // ⚠️ ACTUALIZAR ESTE VALOR CON LA DIRECCIÓN DEL BullFarmSwapper TRAS DESPLEGAR
-  let   SWAPPER_CONTRACT   = '0x0000000000000000000000000000000000000000';  // Placeholder - reemplazar tras deploy
   const PERMIT2            = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
   const QUOTER_V2          = '0x10158D43e6cc414deE1Bd1eB0EfC6a5cBCfF244c';
 
-  // ============= JUEGO ON-CHAIN — BullFarmGameV2 (Permit2 Edition) =============
-  // V2: Soporta Permit2 oficial de Worldcoin para mejor UX
-  // V1 (legacy, 10M atrapados, recuperables 30d): 0xb20996C8227643bff18c2B2cB8F712329AF3133a
-  const GAME_CONTRACT      = '0xAf0814aE637f631F42e034eFB686248302923F94'; // BullFarmGameV5 - precios dinámicos, ataques+venganza, pausa
-  const REFERRALS_CONTRACT = '0x85dc36E4Cb98E04cE88d8CFfdf70594CdD75A069'; // BullFarmReferrals - sistema de invitaciones on-chain
+  // ============= JUEGO ON-CHAIN — BullFarmGameV5 (Permit2 Edition) =============
+  const GAME_CONTRACT      = '0xAf0814aE637f631F42e034eFB686248302923F94'; // BullFarmGameV5
+  const REFERRALS_CONTRACT = '0x85dc36E4Cb98E04cE88d8CFfdf70594CdD75A069'; // BullFarmReferrals
   // Backend Vercel que firma cosechas y genera rarezas
   const BACKEND_URL        = 'https://bull-farm-backend.vercel.app';
   const HARVEST_API        = BACKEND_URL + '/api/sign-harvest';
   const PACK_API           = BACKEND_URL + '/api/generate-pack';
 
-  // Fee tier del pool (Uniswap V3): 100=0.01%, 500=0.05%, 3000=0.3%, 10000=1%
-  // Por defecto 3000 (0.3%). Si tu pool es de otro tier, lo detectamos automáticamente.
-  let BFM_POOL_FEE = 3000;
+  // Fee tier del pool (V5 usa 10000 = 1%)
+  let BFM_POOL_FEE = 10000;
 
   // ABIs mínimos para Uniswap V3
   const V3_POOL_ABI = [
