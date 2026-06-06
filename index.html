@@ -2826,40 +2826,20 @@
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
       const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
 
-      // Leer datos on-chain en paralelo
-      const [bulls, foodInv, stomachData] = await Promise.all([
+      // V5: solo existen getPlayerBulls + getFeedStatus.
+      // getFeedStatus -> (uint8[10] levels, uint256[10] nextFeedTimes)
+      // foodLevel[rarity] va de 0 a STOMACH_SIZE[rarity]. No hay "tipos" de comida comprables.
+      const STOMACH_SIZE = [2, 2, 3, 3, 3, 5, 5, 5, 5, 5];
+      const [bulls, feed] = await Promise.all([
         game.getPlayerBulls(playerAddress),
-        game.getPlayerFood(playerAddress),
-        game.getAllStomachStatus(playerAddress)
+        game.getFeedStatus(playerAddress)
       ]);
-      // stomachData: [mealsLeft[10], capacity[10], hungry[10]]
+      const levels = feed[0];          // uint8[10] nivel de comida por rareza
+      const nextFeedTimes = feed[1];   // uint256[10] timestamp próximo feed
 
       grid.innerHTML = '';
 
-      // Cabecera con inventario de comida
-      const FOOD_NAMES = ['Común', 'Premium', 'Élite', 'Real'];
-      const FOOD_ICONS = ['🌾', '🌟', '✨', '👑'];
-      const FOOD_PRICES = [0.25, 1, 5, 25];
-
-      const foodHeader = document.createElement('div');
-      foodHeader.style.cssText = 'grid-column:1/-1;background:var(--black-2);border:2px solid var(--gold);border-radius:18px;padding:14px;margin-bottom:14px';
-      foodHeader.innerHTML = `
-        <div style="font-family:Anton,sans-serif;color:var(--gold-bright);font-size:14px;letter-spacing:2px;text-align:center;margin-bottom:10px">🍽️ MI COMIDA</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-          ${[0,1,2,3].map(i => `
-            <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.5);border:1px solid var(--gold-pale);border-radius:12px">
-              <div style="font-size:20px">${FOOD_ICONS[i]}</div>
-              <div style="font-family:Anton,sans-serif;color:var(--gold-bright);font-size:12px">${FOOD_NAMES[i]}</div>
-              <div style="font-family:JetBrains Mono,monospace;color:var(--white);font-size:14px;margin-top:2px"><b>${Number(foodInv[i])}</b></div>
-              <div style="font-size:10px;color:var(--gold-pale);margin-top:2px">${FOOD_PRICES[i]} BULL</div>
-              <button class="buy-food-btn" data-food-type="${i}" data-qty="10" style="margin-top:4px;background:var(--gold-bright);color:var(--black);border:none;border-radius:8px;padding:4px 6px;font-family:Anton,sans-serif;font-size:10px;cursor:pointer;width:100%">+10</button>
-            </div>
-          `).join('')}
-        </div>
-      `;
-      grid.appendChild(foodHeader);
-
-      // Mostrar toros por rareza con estado de hambre
+      // Mostrar toros por rareza con estado de hambre (modelo V5: foodLevel por rareza)
       let hasBulls = false;
       for (let r = 0; r < 10; r++) {
         const count = Number(bulls[r]);
@@ -2869,18 +2849,14 @@
         const toro = TOROS[r];
         if (!toro) continue;
 
-        const mealsLeft = Number(stomachData[0][r]);
-        const capacity = Number(stomachData[1][r]);
-        const isHungry = stomachData[2][r];
-        const pct = capacity > 0 ? (mealsLeft / capacity) * 100 : 0;
+        const level = Number(levels[r]);
+        const capacity = STOMACH_SIZE[r];
+        const isHungry = level === 0;
+        const pct = capacity > 0 ? (level / capacity) * 100 : 0;
 
         let energyClass = '';
         if (pct === 0) energyClass = 'critical';
         else if (pct < 50) energyClass = 'low';
-
-        const foodTypeForRarity = r <= 1 ? 0 : (r <= 4 ? 1 : (r <= 6 ? 2 : 3));
-        const foodAvailable = Number(foodInv[foodTypeForRarity]);
-        const canFeed = foodAvailable >= count && !isHungry === false ? true : (foodAvailable >= count);
 
         const card = document.createElement('div');
         card.className = 'toro-card' + (isHungry ? ' energy-low' : '');
@@ -2893,15 +2869,12 @@
           <div class="toro-rate">${fmt(toro.income * count)} BULL/${currentLang === 'es' ? 'día' : 'day'}</div>
           <div class="energy-label">
             <span>${isHungry ? '🔴 HAMBRIENTO' : '🟢 ALIMENTADO'}</span>
-            <b>${mealsLeft}/${capacity}</b>
+            <b>${level}/${capacity}</b>
           </div>
           <div class="energy-bar"><div class="energy-fill ${energyClass}" style="width:${pct}%"></div></div>
-          <button class="feed-btn-all" data-feed-rarity="${r}" ${canFeed ? '' : 'disabled'} style="margin-top:8px;width:100%;background:${canFeed ? 'var(--gold-bright)' : 'var(--dim)'};color:var(--black);border:none;border-radius:10px;padding:6px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:1px;cursor:${canFeed ? 'pointer' : 'not-allowed'}">
-            ${FOOD_ICONS[foodTypeForRarity]} ALIMENTAR (${count} ${FOOD_ICONS[foodTypeForRarity]})
+          <button class="feed-btn-all" data-feed-rarity="${r}" style="margin-top:8px;width:100%;background:var(--gold-bright);color:var(--black);border:none;border-radius:10px;padding:6px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer">
+            🌾 ALIMENTAR
           </button>
-          <div style="font-size:9px;color:var(--gold-pale);text-align:center;margin-top:4px">
-            Necesita ${count} comida ${FOOD_NAMES[foodTypeForRarity]}
-          </div>
         `;
         grid.appendChild(card);
       }
@@ -2918,13 +2891,6 @@
         b.addEventListener('click', () => {
           const rarity = parseInt(b.dataset.feedRarity);
           feedToro(rarity);
-        });
-      });
-      grid.querySelectorAll('.buy-food-btn').forEach(b => {
-        b.addEventListener('click', () => {
-          const foodType = parseInt(b.dataset.foodType);
-          const qty = parseInt(b.dataset.qty);
-          buyFood(foodType, qty);
         });
       });
     } catch (e) {
@@ -4255,7 +4221,7 @@
 
     try {
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-      const fnSel = ethers.id('feedBulls(uint8)').slice(0,10);
+      const fnSel = ethers.id('feedBull(uint8)').slice(0,10);
       const fnData = fnSel + abiCoder.encode(['uint8'], [rarity]).slice(2);
 
       const txResult = await mk.sendTransaction({
@@ -4960,12 +4926,9 @@
     // V3 - Compras SIN AZAR (1 toro garantizado)
     'function buyBullBFM(uint8 rarity)',
     'function buyBullWLD(uint8 rarity)',
-    // V3 - Sistema de hambre
-    'function buyFood(uint8 foodType, uint256 amount)',
-    'function feedBulls(uint8 rarity)',
-    'function getStomachStatus(address user, uint8 rarity) view returns (uint8 mealsLeft, uint8 capacity, bool isHungry)',
-    'function getAllStomachStatus(address user) view returns (uint8[10] mealsLeft, uint8[10] capacity, bool[10] hungry)',
-    'function getFoodType(uint8 rarity) pure returns (uint8)',
+    // V5 - Sistema de hambre
+    'function buyFood(uint8 rarity, uint8 amount)',
+    'function feedBull(uint8 rarity)',
     // V3 - Harvest ON-CHAIN (sin signer)
     'function harvest() returns (uint256)',
     'function calculateHarvest(address user) view returns (uint256)',
@@ -4979,8 +4942,8 @@
     'function totalBfmInPool() view returns (uint256)',
     // V3 - View
     'function getPlayerBulls(address user) view returns (uint256[10])',
-    'function getPlayerFood(address user) view returns (uint256[4])',
-    'function getPlayerStats(address user) view returns (uint256 lastHarvest, uint256 totalHarvest, uint256 totalBoughtCount, uint256 pendingHarvest)',
+    'function getPlayerStats(address user) view returns (uint256 pending, uint256 totalHarvestedSoFar, uint256 lastHarvest, uint256 totalBullsOwned)',
+    'function getFeedStatus(address user) view returns (uint8[10] levels, uint256[10] nextFeedTimes)',
     // V3 - Constantes (públicas auto-getters)
     'function BULL_PRICES_BFM(uint256) view returns (uint256)',
     'function BULL_PRICES_WLD(uint256) view returns (uint256)',
@@ -5794,5 +5757,67 @@
   })();
 </script>
 
+<div id="dbg-btn" style="position:fixed;bottom:80px;right:12px;z-index:99999;background:#ff3b30;color:#fff;border-radius:50%;width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.5);cursor:pointer">🐞</div>
+<div id="dbg-panel" style="display:none;position:fixed;inset:5% 4%;z-index:99999;background:#111;color:#0f0;border:2px solid #0f0;border-radius:12px;padding:14px;overflow:auto;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <b style="color:#fff;font-size:14px">DIAGNÓSTICO</b>
+    <button id="dbg-close" style="background:#ff3b30;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px">Cerrar ✕</button>
+  </div>
+  <button id="dbg-run" style="background:#0a84ff;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;width:100%;margin-bottom:10px">▶ EJECUTAR PRUEBA</button>
+  <div id="dbg-out">Toca EJECUTAR PRUEBA</div>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('dbg-btn'),panel=document.getElementById('dbg-panel'),out=document.getElementById('dbg-out');
+  btn.onclick=function(){panel.style.display='block';};
+  document.getElementById('dbg-close').onclick=function(){panel.style.display='none';};
+  function log(s){out.textContent+= s+"\n";}
+  document.getElementById('dbg-run').onclick=async function(){
+    out.textContent='';
+    try{
+      var RPC='https://worldchain-mainnet.g.alchemy.com/public';
+      var GAME='0xAf0814aE637f631F42e034eFB686248302923F94';
+      // 1. wallet conectada
+      var w = (window.state&&window.state.walletAddress)||window.userWallet||'';
+      log('1) Wallet en app: '+(w||'❌ VACÍA — no hay wallet conectada'));
+      if(!w){log('>> Si está vacía: el problema es que walletAddress no se setea al conectar.');return;}
+      // 2. ethers disponible?
+      if(typeof ethers==='undefined'){log('2) ❌ ethers NO está cargado en este scope');return;}
+      log('2) ethers OK, versión: '+(ethers.version||'?'));
+      var provider=new ethers.JsonRpcProvider(RPC);
+      // 3. red responde?
+      try{var bn=await provider.getBlockNumber();log('3) RPC OK, bloque: '+bn);}
+      catch(e){log('3) ❌ RPC FALLA: '+e.message);return;}
+      var ABI=[
+        'function getPlayerBulls(address) view returns (uint256[10])',
+        'function getPlayerStats(address) view returns (uint256 pending,uint256 totalHarvested,uint256 lastHarvest,uint256 totalBulls)',
+        'function migrated(address) view returns (bool)'
+      ];
+      var game=new ethers.Contract(GAME,ABI,provider);
+      // 4. migrated?
+      try{var m=await game.migrated(w);log('4) migrated['+w.slice(0,8)+']: '+m+(m?' ✓':' ❌ ESTA WALLET NO FUE MIGRADA'));}
+      catch(e){log('4) migrated() error: '+e.message);}
+      // 5. bulls
+      try{
+        var b=await game.getPlayerBulls(w);
+        var arr=b.map(function(x){return Number(x);});
+        var tot=arr.reduce(function(a,c){return a+c;},0);
+        log('5) getPlayerBulls: ['+arr.join(',')+']  total='+tot+(tot>0?' ✓':' ❌ CERO TOROS en esta wallet'));
+      }catch(e){log('5) ❌ getPlayerBulls error: '+e.message);}
+      // 6. stats
+      try{
+        var s=await game.getPlayerStats(w);
+        log('6) getPlayerStats:');
+        log('     pending        = '+ethers.formatEther(s[0]));
+        log('     totalHarvested = '+ethers.formatEther(s[1]));
+        log('     lastHarvest    = '+Number(s[2])+' ('+(Number(s[2])?new Date(Number(s[2])*1000).toISOString():'0 = nunca')+')');
+        log('     totalBulls     = '+Number(s[3]));
+      }catch(e){log('6) ❌ getPlayerStats error: '+e.message);}
+      log('--- FIN ---');
+      log('Manda captura de esto.');
+    }catch(e){log('ERROR GENERAL: '+e.message);}
+  };
+})();
+</script>
 </body>
 </html>
