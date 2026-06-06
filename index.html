@@ -4980,7 +4980,7 @@
     // V3 - View
     'function getPlayerBulls(address user) view returns (uint256[10])',
     'function getPlayerFood(address user) view returns (uint256[4])',
-    'function getPlayerStats(address user) view returns (uint256 pending, uint256 totalHarvestedSoFar, uint256 lastHarvest, uint256 totalBullsOwned)',
+    'function getPlayerStats(address user) view returns (uint256 lastHarvest, uint256 totalHarvest, uint256 totalBoughtCount, uint256 pendingHarvest)',
     // V3 - Constantes (públicas auto-getters)
     'function BULL_PRICES_BFM(uint256) view returns (uint256)',
     'function BULL_PRICES_WLD(uint256) view returns (uint256)',
@@ -5794,67 +5794,5 @@
   })();
 </script>
 
-<div id="dbg-btn" style="position:fixed;bottom:80px;right:12px;z-index:99999;background:#ff3b30;color:#fff;border-radius:50%;width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.5);cursor:pointer">🐞</div>
-<div id="dbg-panel" style="display:none;position:fixed;inset:5% 4%;z-index:99999;background:#111;color:#0f0;border:2px solid #0f0;border-radius:12px;padding:14px;overflow:auto;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <b style="color:#fff;font-size:14px">DIAGNÓSTICO</b>
-    <button id="dbg-close" style="background:#ff3b30;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px">Cerrar ✕</button>
-  </div>
-  <button id="dbg-run" style="background:#0a84ff;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;width:100%;margin-bottom:10px">▶ EJECUTAR PRUEBA</button>
-  <div id="dbg-out">Toca EJECUTAR PRUEBA</div>
-</div>
-<script>
-(function(){
-  var btn=document.getElementById('dbg-btn'),panel=document.getElementById('dbg-panel'),out=document.getElementById('dbg-out');
-  btn.onclick=function(){panel.style.display='block';};
-  document.getElementById('dbg-close').onclick=function(){panel.style.display='none';};
-  function log(s){out.textContent+= s+"\n";}
-  document.getElementById('dbg-run').onclick=async function(){
-    out.textContent='';
-    try{
-      var RPC='https://worldchain-mainnet.g.alchemy.com/public';
-      var GAME='0xAf0814aE637f631F42e034eFB686248302923F94';
-      // 1. wallet conectada
-      var w = (window.state&&window.state.walletAddress)||window.userWallet||'';
-      log('1) Wallet en app: '+(w||'❌ VACÍA — no hay wallet conectada'));
-      if(!w){log('>> Si está vacía: el problema es que walletAddress no se setea al conectar.');return;}
-      // 2. ethers disponible?
-      if(typeof ethers==='undefined'){log('2) ❌ ethers NO está cargado en este scope');return;}
-      log('2) ethers OK, versión: '+(ethers.version||'?'));
-      var provider=new ethers.JsonRpcProvider(RPC);
-      // 3. red responde?
-      try{var bn=await provider.getBlockNumber();log('3) RPC OK, bloque: '+bn);}
-      catch(e){log('3) ❌ RPC FALLA: '+e.message);return;}
-      var ABI=[
-        'function getPlayerBulls(address) view returns (uint256[10])',
-        'function getPlayerStats(address) view returns (uint256 pending,uint256 totalHarvested,uint256 lastHarvest,uint256 totalBulls)',
-        'function migrated(address) view returns (bool)'
-      ];
-      var game=new ethers.Contract(GAME,ABI,provider);
-      // 4. migrated?
-      try{var m=await game.migrated(w);log('4) migrated['+w.slice(0,8)+']: '+m+(m?' ✓':' ❌ ESTA WALLET NO FUE MIGRADA'));}
-      catch(e){log('4) migrated() error: '+e.message);}
-      // 5. bulls
-      try{
-        var b=await game.getPlayerBulls(w);
-        var arr=b.map(function(x){return Number(x);});
-        var tot=arr.reduce(function(a,c){return a+c;},0);
-        log('5) getPlayerBulls: ['+arr.join(',')+']  total='+tot+(tot>0?' ✓':' ❌ CERO TOROS en esta wallet'));
-      }catch(e){log('5) ❌ getPlayerBulls error: '+e.message);}
-      // 6. stats
-      try{
-        var s=await game.getPlayerStats(w);
-        log('6) getPlayerStats:');
-        log('     pending        = '+ethers.formatEther(s[0]));
-        log('     totalHarvested = '+ethers.formatEther(s[1]));
-        log('     lastHarvest    = '+Number(s[2])+' ('+(Number(s[2])?new Date(Number(s[2])*1000).toISOString():'0 = nunca')+')');
-        log('     totalBulls     = '+Number(s[3]));
-      }catch(e){log('6) ❌ getPlayerStats error: '+e.message);}
-      log('--- FIN ---');
-      log('Manda captura de esto.');
-    }catch(e){log('ERROR GENERAL: '+e.message);}
-  };
-})();
-</script>
 </body>
 </html>
