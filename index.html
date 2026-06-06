@@ -5037,19 +5037,24 @@
     }
   }
 
-  // ============= LEER STATS DEL JUGADOR V3 (on-chain) =============
+  // ============= LEER STATS DEL JUGADOR V5 (on-chain) =============
   async function fetchPlayerStatsOnChain(playerAddress) {
     try {
       const provider = new ethers.JsonRpcProvider(WORLD_RPC);
       const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, provider);
-      // V3: getPlayerStats devuelve (lastHarvest, totalHarvest, totalBoughtCount, pendingHarvest)
+      // V5: getPlayerStats devuelve (pending, totalHarvested, lastHarvestTime, totalBullsOwned)
       const stats = await game.getPlayerStats(playerAddress);
-      const poolBalance = await game.totalBfmInPool();
+      let poolBalance;
+      try {
+        poolBalance = await game.totalBullInPool();
+      } catch (e) {
+        // Fallback al nombre viejo si V5 falla
+        try { poolBalance = await game.totalBfmInPool(); } catch (e2) { poolBalance = 0n; }
+      }
       const bulls = await game.getPlayerBulls(playerAddress);
 
-      // Calcular producción diaria total sumando producción por rareza
-      // Producción diaria por rareza (en wei): [5, 35, 110, 320, 850, 2200, 5500, 13000, 30000, 70000] * 1e18
-      const dailyPerRarity = [5, 35, 110, 320, 850, 2200, 5500, 13000, 30000, 70000];
+      // Producción diaria V5 reducida: [5, 15, 50, 150, 400, 1000, 2500, 6000, 14000, 32000]
+      const dailyPerRarity = [5, 15, 50, 150, 400, 1000, 2500, 6000, 14000, 32000];
       let totalDaily = 0;
       let totalBulls = 0;
       for (let i = 0; i < 10; i++) {
@@ -5058,11 +5063,12 @@
         totalDaily += count * dailyPerRarity[i];
       }
 
+      // V5 order: stats[0]=pending, stats[1]=totalHarvested, stats[2]=lastHarvestTime, stats[3]=totalBullsOwned
       return {
         totalBulls: totalBulls,
         totalHarvested: ethers.formatEther(stats[1]),
-        lastHarvest: Number(stats[0]),
-        pendingHarvest: ethers.formatEther(stats[3]),
+        lastHarvest: Number(stats[2]),
+        pendingHarvest: ethers.formatEther(stats[0]),
         poolBalance: ethers.formatEther(poolBalance),
         dailyProduction: String(totalDaily)
       };
